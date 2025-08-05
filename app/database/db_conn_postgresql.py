@@ -1,10 +1,12 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/vidhan-pg"
+# Get database URL from environment variable with fallback
+DATABASE_URL = os.getenv('DATABASE_URL', "postgresql://postgres:postgres@localhost:5432/vidhan-pg")
 
 # Create the SQLAlchemy engine
-engine = create_engine(DATABASE_URL, echo=True, future=True)
+engine = create_engine(DATABASE_URL, echo=False, future=True)
 
 # Create a configured "Session" class
 SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
