@@ -2,6 +2,13 @@
 
 from google.cloud import vision
 import os
+import io
+from google.cloud.vision_v1 import types
+from typing import List, Tuple
+from app.logging.logger import Logger
+
+
+logger = Logger()
 
 def setup_vision_client():
     # Get the absolute path to the credentials file

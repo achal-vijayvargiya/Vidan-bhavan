@@ -1,0 +1,262 @@
+  [
+    {
+        "lob": "प्रश्नोत्तरे",
+        "sub_lob": [
+          "तारांकित प्रश्न (तोंडी उत्तरे )",
+          "अल्पसुचना प्रश्न",
+          "अतारांकित प्रश्न (लेखी उत्तरे )"
+        ],
+        "lob_type": "Devices"
+      },
+      {
+        "lob": "लक्षवेधी सूचना",
+        "sub_lob": [
+          "निकडीच्या सार्वजनिक महत्वाचे बाबींवर लक्ष वेधणे"
+        ],
+        "lob_type": "Devices"
+      },
+      {
+        "lob": "प्रस्ताव",
+        "sub_lob": [
+          "अध्यक्षांना/ उपाध्यक्षांना पदावरून दूर करण्यासंबंधीचा प्रस्ताव",
+          "अभिनंदनपर प्रस्ताव",
+          "शोक प्रस्ताव",
+          "विश्वासदर्शक प्रस्ताव",
+          "अर्धा तास चर्चा",
+          "मंत्रिमंडळावर अविश्वास व्यक्त करणारा प्रस्ताव",
+          "स्थगन प्रस्ताव",
+          "अल्पकालीन चर्चा",
+          "समिती नियुक्त करण्यासंबंधातील प्रस्ताव",
+          "संविधीक प्रस्ताव",
+          "अंतिम आठवडा प्रस्ताव",
+          "सार्वजनिक हितसंबंधाच्या बाबींवर चर्चा",
+          "अनियत दिन प्रस्ताव"
+        ],
+        "lob_type": "Devices"
+      },
+      {
+        "lob": "ठराव",
+        "sub_lob": [
+          "अशासकीय ठराव",
+          "शासकीय ठराव",
+          "वैधानिक ठराव"
+        ],
+        "lob_type": "Devices"
+      },
+    {
+      "lob": "विधेयके",
+      "sub_lob": ["शासकीय विधेयके", "अशासकीय विधेयके"],
+      "lob_type": "Legislation"
+    },
+    {
+      "lob": "संसदीय कामकाज पद्धती",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "शपथ घेणे",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "हरकतीचा मुद्दा",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "औचित्याचा मुद्दा",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "कार्यपद्धतीच्या मुद्द्याबाबत",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "माहितीचे मुद्दे",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "आस्थाही अध्यक्ष्यांची नेमणूक",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "दिवसाच्या कामकाजाच्या क्रम",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "कागदपत्रे सभागृहासमोर ठेवणे",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "अध्यक्षांनी केलेली घोषणा",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "राज्यपालांचे अभिभाषण",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "मंत्र्यांचे निवेदन",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "विनंती अर्ज",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "अध्यादेश",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "संविधान सुधारणेचे अनुसमर्थन",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "नवीन मंत्र्यांचा परिचय",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "सदस्यांचा परिचय",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "पोट निवडणुकीत निवडून आलेल्या सदस्यांचा परिचय",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "सभाध्यक्ष तालिका",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "मानहानीकारक व अपमानास्पद विधान",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "वैयक्तिक स्पष्टीकरणे",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "मतमोजणी प्रस्ताव",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "महा अधिवक्ता यांची सभागृहातील उपस्थिती व त्यांचे कायदेशीर मत जाणून घेणे.",
+      "sub_lob": [],
+      "lob_type": "Paliamentary Procedures"
+    },
+    {
+      "lob": "महत्वाचे अर्थसंकल्पीय मुद्दे",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "अर्थसंकल्प भाषण",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "लेखानुदान",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "पूरक मागण्या",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "अधिक खर्चाच्या मागण्या",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "अर्थसंकल्पावरील चर्चा",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "सर्वसाधारण चर्चा",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "अनुदानाच्या मागण्यांवरील चर्चा व मतदान",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "चर्चारोध",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "कपात सूचना",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "अ. एक रुपयाची कपात",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "ब. लाक्षणिक कपात",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "क. विशिष्ट रकमेची कपात",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "लाक्षणिक अनुदानाच्या मागण्या",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "विनिनोजन अधिनियम",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "स्थूल मागण्या",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "खर्चाचे पूरक विवरणपत्र",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "अधिक खर्चाचे विवरणपत्र",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    },
+    {
+      "lob": "नवीन खर्च",
+      "sub_lob": [],
+      "lob_type": "Budget"
+    }
+  ]
+    

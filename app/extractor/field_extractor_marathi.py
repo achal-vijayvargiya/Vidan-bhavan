@@ -4,7 +4,6 @@ import re
 
 def extract_fields_from_marathi_text(text):
     data = {}
-    print(text)
     # 1. Date
     date_match = re.search(r'\d{1,2} [ज|फ|म|ए|म|ज|ज|ऑ|स|ऑ|नो|ड][^\s]* \d{4}', text)
     data["date"] = date_match.group() if date_match else None

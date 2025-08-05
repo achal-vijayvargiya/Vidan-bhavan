@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  backend:
+    build: .
+    container_name: vidhan-bhavan-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+      # Persist the SQLite DB file outside the container (optional, for dev)
+      - ./vidhan_sabha.db:/app/vidhan_sabha.db
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    restart: unless-stopped
