@@ -173,7 +173,7 @@ cython_debug/
 # Sensitive configuration files
 app/config/gcp_config.json
 app/config/gcp_config_bck.json
-app/config/OpenRouter.py
+# app/config/OpenRouter.py
 
 # Large data files
 ocr_results.json
