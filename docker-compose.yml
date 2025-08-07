@@ -43,6 +43,7 @@ services:
 
   backend:
     build: .
+    image: vidhan-bhavan-backend:latest
     container_name: vidhan-bhavan-backend
     ports:
       - "8000:8000"
