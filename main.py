@@ -106,15 +106,15 @@ if __name__ == "__main__":
     logger.info("🚀 Starting VidanBhavan processing with COST OPTIMIZATIONS")
     createtables()
 
-    folder_path = r"D:\Test2000\2000\MLA\Session_1_Budget\Kramank_1"
+    # folder_path = r"D:\Test2000\2000\MLA\Session_1_Budget\Kramank_1"
     
-    # COST OPTIMIZATION: Choose processing mode
-    logger.info("💡 COST-SAFE PROCESSING OPTIONS:")
-    logger.info("1. Single folder processing (RECOMMENDED for testing)")
-    logger.info("2. Batch processing (HIGH COST - disabled by default)")
+    # # COST OPTIMIZATION: Choose processing mode
+    # logger.info("💡 COST-SAFE PROCESSING OPTIONS:")
+    # logger.info("1. Single folder processing (RECOMMENDED for testing)")
+    # logger.info("2. Batch processing (HIGH COST - disabled by default)")
     
-    # RECOMMENDED: Process single folder for testing
-    run_single_folder(folder_path)
+    # # RECOMMENDED: Process single folder for testing
+    # run_single_folder(folder_path)
     
     # COST WARNING: Batch processing can be expensive
     # logger.warning("🚨 Batch processing is currently DISABLED for cost protection")

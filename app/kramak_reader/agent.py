@@ -6,7 +6,6 @@ from pathlib import Path
 from app.kramak_reader.kramak_ocr import kramank_ocr
 from app.karyavali_parser.karyavali_parser import extract_karyavali_blocks
 from app.kramak_reader.splitter import extract_date_from_marathi_text
-from app.database.database_manager import DataManager
 from app.kramak_reader.splitter import extract_adhyaksha
 import json
 from app.logging.logger import Logger
@@ -25,7 +24,6 @@ logger = Logger()
 
 def agent_run(folder_path=None, kramak_name=None):
     logger.info(f"agent_run called with folder_path={folder_path}, kramak_name={kramak_name}")
-    data_manager = DataManager()
     
     session_id = None
     kramak_id = None
