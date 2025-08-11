@@ -1,10 +1,11 @@
 version: "3.8"
 
 networks:
-  shared-network:
-    external: true
+  vidhan-bhavan-network:
+    driver: bridge
 
 services:
+  # Database Services
   postgres:
     image: postgres:15
     container_name: vidhan-bhavan-postgres
@@ -17,7 +18,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - shared-network
+      - vidhan-bhavan-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -33,7 +34,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - shared-network
+      - vidhan-bhavan-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -41,14 +42,16 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # Backend Service (Internal - not exposed to public)
   backend:
-    build: .
+    build: 
+      context: ./backend/Vidan-bhavan
+      dockerfile: Dockerfile
     image: vidhan-bhavan-backend:latest
     container_name: vidhan-bhavan-backend
-    ports:
-      - "8000:8000"
+    # No public ports exposed - only accessible within the network
     volumes:
-      - ./:/app
+      - ./backend/Vidan-bhavan:/app
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
@@ -58,7 +61,7 @@ services:
       - REDIS_DB=0
       - ENVIRONMENT=production
     networks:
-      - shared-network
+      - vidhan-bhavan-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -71,6 +74,42 @@ services:
       retries: 3
     restart: unless-stopped
 
+  # Frontend Service (Exposed to public)
+  frontend:
+    build:
+      context: ./frontend/vidhan-bhavan-insights-hub
+      dockerfile: Dockerfile
+    container_name: vidhan-bhavan-frontend
+    ports:
+      - "${FRONTEND_PORT:-3030}:80"
+      # Optional HTTPS port - uncomment if needed
+      # - "${FRONTEND_HTTPS_PORT:-8443}:443"
+    environment:
+      # Set the backend API URL to use the backend container name
+      - VITE_API_URL=${VITE_API_URL:-http://vidhan-bhavan-backend:8000/api}
+    volumes:
+      # Optional: Mount custom nginx config if you need to override
+      - ./frontend/vidhan-bhavan-insights-hub/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+    networks:
+      - vidhan-bhavan-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   postgres_data:
   redis_data:
+  nginx_logs:
+    driver: local
