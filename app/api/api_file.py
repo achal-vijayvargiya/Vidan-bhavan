@@ -43,6 +43,18 @@ app.add_middleware(
 # Include user authentication routes
 app.include_router(user_router)
 
+# ==================== STARTUP HOOK ====================
+
+@app.on_event("startup")
+def startup_create_tables() -> None:
+    """Ensure all PostgreSQL tables exist on service startup."""
+    try:
+        from app.database.db_init_postgresql import createtables
+        createtables()
+        logger.info("✅ Database tables ensured on startup")
+    except Exception as e:
+        logger.error(f"❌ Failed to create tables on startup: {str(e)}")
+
 # ==================== USER AUTHENTICATION ENDPOINTS ====================
 
 # Pydantic models for login
@@ -160,6 +172,11 @@ async def root():
             "login": "/api/login"
         }
     }
+
+# Simple health endpoint for container healthchecks
+@app.get("/api/health")
+def health() -> dict:
+    return {"status": "ok"}
 
 # ==================== SESSION ENDPOINTS ====================
 
