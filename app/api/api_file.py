@@ -33,6 +33,7 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:8080",
+        "http://103.112.121.174:8020",  # Public IP and port for deployed frontend
         "*"  # Allow all origins for development
     ],
     allow_credentials=True,
