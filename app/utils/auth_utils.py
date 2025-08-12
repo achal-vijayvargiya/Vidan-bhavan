@@ -12,6 +12,8 @@ from datetime import datetime
 from typing import Optional
 from app.data_modals import User
 from sqlalchemy.orm import Session
+from app.logging.logger import Logger
+logger = Logger()
 
 def hash_password(password: str) -> str:
     """
@@ -124,7 +126,7 @@ def authenticate_user(db: Session, username: str, password: str) -> Optional[Use
     # Update last login
     user.last_login = datetime.utcnow()
     db.commit()
-    
+    logger.info(f"User '{user.username}' logged in at {user.last_login}")    
     return user
 
 def get_user_by_username(db: Session, username: str) -> Optional[User]:

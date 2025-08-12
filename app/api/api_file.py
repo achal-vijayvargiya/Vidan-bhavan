@@ -8,6 +8,7 @@ from app.api.user_endpoints import router as user_router
 from app.data_modals import User
 from app.utils.auth_utils import authenticate_user, get_user_by_username
 from pydantic import BaseModel
+from app.database.db_conn_postgresql import get_db
 import uvicorn
 
 # Initialize logger and API service
@@ -80,7 +81,7 @@ async def login_user(login_data: LoginRequest):
     """
     try:
         # Get database session
-        from app.database.db_conn_postgresql import get_db
+        logger.info(f"Login request received for user: {login_data.username}")
         db = next(get_db())
         
         # Authenticate user
