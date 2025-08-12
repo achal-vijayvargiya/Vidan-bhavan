@@ -41,7 +41,7 @@ services:
   # Backend Service (internal only - not exposed to public)
   backend:
     build:
-      context: .
+      context: ./backend/Vidan-bhavan
       dockerfile: Dockerfile
     image: vidhan-bhavan-backend:latest
     container_name: vidhan-bhavan-backend
@@ -73,7 +73,7 @@ services:
   # Frontend build service (builds app and copies to shared volume)
   frontend:
     build:
-      context: ../vidhan-bhavan-insights-hub
+      context: ./frontend/vidhan-bhavan-insights-hub
       dockerfile: Dockerfile
       args:
         - VITE_API_URL=/api
