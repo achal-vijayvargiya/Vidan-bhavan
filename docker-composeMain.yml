@@ -40,12 +40,12 @@ services:
   # Backend (internal only)
   backend:
     build:
-      context: ./backend/vidanbhavan
+      context: ./backend/Vidan-bhavan/
       dockerfile: Dockerfile
     image: vidhan-bhavan-backend:latest
     container_name: vidhan-bhavan-backend
     volumes:
-      - ./backend/vidanbhavan:/app
+      - ./backend/Vidan-bhavan/:/app
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
