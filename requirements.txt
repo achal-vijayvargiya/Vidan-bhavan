@@ -2,7 +2,11 @@
 langchain>=0.1.0
 langchain-core>=0.1.0
 langchain-community>=0.0.10
+langchain-openai>=0.0.5
 openai>=1.0.0
+
+# PDF Processing
+PyPDF2>=3.0.0
 
 # Google Cloud and AI services
 google-cloud-vision>=3.4.0
