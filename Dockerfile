@@ -32,8 +32,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy project files
 COPY . .
 
-# Change ownership to non-root user
-RUN chown -R appuser:appuser /app
+# Create temp directory with proper permissions
+RUN mkdir -p /app/temp && \
+    chown -R appuser:appuser /app && \
+    chmod -R 755 /app && \
+    chmod 777 /app/temp
 
 # Switch to non-root user
 USER appuser
