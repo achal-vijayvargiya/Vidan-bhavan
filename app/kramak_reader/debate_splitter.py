@@ -117,7 +117,7 @@ def is_valid_heading(heading_text):
     # Negative patterns: if any matches, this is NOT a heading
     negative_patterns = [
         r"^बंदे\s+मातरम्",                # "Bande Mataram"
-        r"^जयहिंद\s*!?\s*जयमहाराष्ट्र\s*!?", # "Jay Hind! Jay Maharashtra!"
+        r"^[\s*।]*जयहिंद[\s!।]*जयमहाराष्ट्र[\s!।]*$", # "Jay Hind! Jay Maharashtra!" with variations
         r"^\(\s*स्थगितीनंतर\s*\)",         # "( स्थगितीनंतर )"
         r"^\d{1,2}\s*मार्च\s*\d{4}",        # Date line
         r"^\d{1,2}\s*[A-Za-z]+\s*\d{4}",    # English date line
@@ -193,7 +193,7 @@ def process_ocr_headings(ocr_results: List[Dict]) -> List[Dict]:
                         # Get end position - either start of next heading or end of text
                         if i < len(headings) - 1:
                             next_heading = headings[i + 1]
-                            end_pos = text.find(next_heading)
+                            end_pos = find_heading_in_text(next_heading, text)
                             if end_pos == -1:
                                 end_pos = len(text)
                         else:

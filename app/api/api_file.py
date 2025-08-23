@@ -1,9 +1,13 @@
 from fastapi import FastAPI, HTTPException, Query, Path
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+import os
+import json
+import uuid
 from typing import Optional, List
 from app.services.api_services import ApiService
 from app.logging.logger import Logger
+from sqlalchemy import text
 from app.api.user_endpoints import router as user_router
 from app.data_modals import User
 from app.utils.auth_utils import authenticate_user, get_user_by_username
@@ -303,7 +307,70 @@ async def get_kramank_with_debates(kramank_id: str = Path(..., description="Kram
         logger.error(f"❌ Error in get_kramank_with_debates endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+# ==================== PDF ENDPOINTS ====================
+
+@app.get("/api/pdf/{document_name}")
+async def get_pdf_file(document_name: str = Path(..., description="PDF document name")):
+    """Serve PDF files from the generated_pdfs directory"""
+    try:
+        # Define the base directory for PDFs
+        pdf_dir = os.path.join(os.getcwd(), "generated_pdfs")
+        pdf_path = os.path.join(pdf_dir, document_name)
+        
+        if not os.path.exists(pdf_path):
+            raise HTTPException(status_code=404, detail="PDF file not found")
+            
+        return FileResponse(
+            pdf_path,
+            media_type="application/pdf",
+            filename=document_name
+        )
+    except Exception as e:
+        logger.error(f"❌ Error serving PDF file: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error serving PDF file")
+
 # ==================== DEBATE ENDPOINTS ====================
+
+@app.get("/api/debates/{debate_id}")
+async def get_debate_by_id(debate_id: str = Path(..., description="Debate ID")):
+    """Get debate by ID with complete details"""
+    try:
+        db = next(get_db())
+        logger.info(f"debate id from ui: {debate_id}")
+        query = text("""
+            SELECT * FROM debates WHERE debate_id = :debate_id
+        """)
+        result = db.execute(query, {"debate_id": debate_id}).first()
+        
+        if not result:
+            raise HTTPException(status_code=404, detail=f"Debate not found: {debate_id}")
+            
+        # Convert row to dict and handle UUID serialization
+        debate = {}
+        for key, value in result._mapping.items():
+            # Convert UUID to string
+            if isinstance(value, uuid.UUID):
+                debate[key] = str(value)
+            else:
+                debate[key] = value
+        
+        # Parse JSON fields
+        for field in ['question_number', 'members', 'topics', 'answers_by']:
+            if field in debate and debate[field]:
+                try:
+                    debate[field] = json.loads(debate[field])
+                except:
+                    pass
+                    
+        return JSONResponse(content=debate, status_code=200)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error in get_debate_by_id endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+    finally:
+        db.close()
 
 @app.get("/api/debates")
 async def get_all_debates():

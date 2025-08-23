@@ -12,9 +12,11 @@ import json
 # Initialize logger
 logger = Logger()
 
-def detect_page_type(text: str, current_section: str) -> str:
+def detect_page_type(text: str, current_section: str, only_index_and_debates: bool = False) -> str:
     """
-    Detect the section type for the given text and current section.
+    Detect the section type for the given OCR page text and current section.
+    - Normal flow (default): index -> members -> karyawalis -> debates
+    - If only_index_and_debates=True (e.g., kramank number != 1): index -> debates
     Returns the new section name ("index", "members", "karyawalis", "debates").
     """
     member_start_pattern = r"महाराष्ट्र शासन\s+राज्यपाल"
@@ -24,6 +26,13 @@ def detect_page_type(text: str, current_section: str) -> str:
     member_match = re.search(member_start_pattern, text)
     karyavali_start_match = re.search(karyavali_start_pattern, text)
     karyavali_end_match = re.search(karyavali_end_pattern, text)
+
+    # Special mode: Kramank != 1 → Only Index and Debates are expected
+    if only_index_and_debates:
+        # Transition directly from index to debates if we detect debate start or end of karyavali anchor
+        if current_section == "index" and (is_debate_start(text) or karyavali_end_match):
+            return "debates"
+        return current_section
 
     if current_section == "index" and member_match:
         return "members"
@@ -61,8 +70,18 @@ def kramank_ocr(folder_path: str, kramak_name: str) -> Dict:
                 "image_name": image_file.name
             }
 
+            # Determine if this kramank should only have index and debates (kramank number != 1)
+            # Infer from kramak_name by extracting first integer; fallback to normal flow if not found
+            only_index_and_debates = False
+            try:
+                kramank_num_match = re.search(r"\d+", kramak_name)
+                if kramank_num_match and int(kramank_num_match.group(0)) != 1:
+                    only_index_and_debates = True
+            except Exception:
+                only_index_and_debates = False
+
             # Use detect_page_type to determine section
-            new_section = detect_page_type(text, current_section)
+            new_section = detect_page_type(text, current_section, only_index_and_debates)
             current_section = new_section
             # INSERT_YOUR_CODE
             # If filename ends with a char (not a number), put page_ocr in ocr_results["index"]

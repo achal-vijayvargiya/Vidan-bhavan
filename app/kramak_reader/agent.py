@@ -14,10 +14,11 @@ from app.data_modals.session import Session
 from app.data_modals.member import Member
 from app.data_modals.resolution import Resolution
 from app.data_modals.kramank import Kramank
-from app.database.db_insert import insert_session, insert_member, insert_kramank
+from app.database.db_insert import insert_session, insert_member, insert_kramank, insert_resolution
 from app.database.db_conn_postgresql import get_db
 from app.index_parser.index_data_extracter import extract_index_data
 from app.members_agent.member_agent import MemberAgent
+import re
 
 # Initialize logger
 logger = Logger()
@@ -70,10 +71,68 @@ def agent_run(folder_path=None, kramak_name=None):
        
         adhyaksha_line = extract_adhyaksha(full_text)
         date_line = extract_date_from_marathi_text(full_text)
+        index_data = extract_index_data(ocr_results.get('index', {}))
+        #    if condition for kramak_name is 1 then extract karyavali data
+        if str(kramak_name) == "1":
+            karyavali_data = extract_karyavali_blocks(full_text)
+        else:
+            karyavali_data = []
+        # Collect image names for karyawali pages (if any)
+        karyawali_image_names = []
+        try:
+            karyawali_image_names = list({page.get('image_name') for page in ocr_results.get('karyawalis', []) if page.get('image_name')})
+        except Exception:
+            karyawali_image_names = []
+
+        # Try to extract place from text (simple heuristic around 'विधानसभेची बैठक')
+        place_match = re.search(r"विधानसभेची\s+बैठक[\s,:-]*([^\n]+)", full_text or "")
+        place_value = place_match.group(1).strip() if place_match else None
+
+        # Insert karyavali (resolution) data into the database
+        inserted_resolutions = []
+        for resolution in karyavali_data:
+            try:
+                # Prepare Resolution object (no kramank_id field in model)
+                resolution_obj = Resolution(
+                    session_id=session_id,
+                    resolution_no=resolution.get("resolution_no") or resolution.get("number"),
+                    resolution_no_en=resolution.get("resolution_no_en") or resolution.get("number_en") or resolution.get("number"),
+                    text=resolution.get("text"),
+                    image_name=resolution.get("image_name") or (karyawali_image_names if karyawali_image_names else None),
+                    place=resolution.get("place") or place_value
+                )
+                inserted_resolution = insert_resolution(resolution_obj)
+                inserted_resolutions.append(inserted_resolution)
+                logger.info(f"Inserted resolution: {resolution_obj.resolution_no}")
+            except Exception as e:
+                logger.error(f"Failed to insert resolution {resolution.get('resolution_no') or resolution.get('number')}: {str(e)}")
+
         
         logger.info(f"Extracted adhyaksha: {adhyaksha_line}, date: {date_line}")
         
-        # Generate custom kramank ID
+        
+        
+        # Extract and insert members from OCR (members pages)
+        try:
+            # if condition for kramak_name is 1 then extract members data
+            if str(kramak_name) == "1":
+                members_pages = ocr_results.get('members', [])
+            else:
+                members_pages = []
+            if members_pages:
+                logger.info(f"Extracting members from {len(members_pages)} pages")
+                members_agent = MemberAgent()
+                members_result = members_agent.process_ocr_result(members_pages)
+                if members_result and members_result.get('members'):
+                    members_agent.save_to_db(members_result, session_id=session_id, house=house)
+                    logger.info(f"Inserted {len(members_result.get('members', []))} members for session {session_id}")
+                else:
+                    logger.info("No members extracted from OCR pages")
+            else:
+                logger.info("No members pages found in OCR results; skipping member extraction")
+        except Exception as e:
+            logger.error(f"Failed to extract/insert members: {str(e)}")
+# Generate custom kramank ID
         custom_kramank_id = f"{session_id}_KRAMANK_{kramak_name}"
         
         # Create and insert kramank
@@ -91,7 +150,7 @@ def agent_run(folder_path=None, kramak_name=None):
         kramank_obj = insert_kramank(kramank_data)
         kramak_id = kramank_obj.kramank_id
         logger.info(f"Inserted kramank with id: {kramak_id}")
-        
+
         # Process debates only if we have a valid kramak_id
         if kramak_id:
             debates_pages = ocr_results.get('debates', [])

@@ -2,7 +2,7 @@ from langchain.prompts import ChatPromptTemplate
 import json
 import hashlib
 from dotenv import load_dotenv
-from app.config.OpenRouter import llm
+from app.config.OpenRouter import llm, llm_gemini
 import time
 from typing import List, Dict
 from langchain.memory import ConversationBufferMemory
@@ -76,7 +76,7 @@ class MemberParser:
         self.memory_key = "member_parser_previous_members"
         self.k = 1  # Only use last call history
         self.prompt = ChatPromptTemplate.from_template(MEMBER_PARSER_TEMPLATE)
-        self.chain = self.prompt | llm
+        self.chain = self.prompt | llm_gemini
         self.processed_chunks = 0  # Track processed chunks
 
     def _get_chunk_cache_key(self, text_chunk: str, previous_members: str, mapping: str) -> str:

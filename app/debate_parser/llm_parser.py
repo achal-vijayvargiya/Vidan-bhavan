@@ -1,7 +1,7 @@
 from langchain.prompts import ChatPromptTemplate
 import json
 from dotenv import load_dotenv
-from app.config.OpenRouter import llm
+from app.config.OpenRouter import llm, llm_gemini
 import time
 import re
 from app.logging.logger import Logger
@@ -49,7 +49,7 @@ DO NOT return extra text, markdown, or comments.
 prompt = ChatPromptTemplate.from_template(DEBATE_PARSER_TEMPLATE)
 
 # Create the chain
-chain = prompt | llm
+chain = prompt | llm_gemini
 
 def get_debate_data(text) -> dict:
     logger.info("get_debate_data called")

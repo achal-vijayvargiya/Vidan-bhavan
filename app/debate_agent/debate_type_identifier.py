@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from app.config.OpenRouter import llm
+from app.config.OpenRouter import llm_gemini
 import re
 import json as pyjson
 from app.logging.logger import Logger
@@ -23,7 +23,7 @@ for entry in LOB_MASTER:
     for sub in entry.get("sub_lob", []):
         LOB_ITEMS.append(sub)
 
-def identify_debate_type(debate_topic):
+def identify_debate_type(debate_topic: str):
     """
     Identify the LOB item for a given debate topic (Marathi) using LLM and lob_master.json.
     Returns the best matching lob item (lob, sub_lob, lob_type).
@@ -57,7 +57,7 @@ If you cannot confidently classify the debate topic, return the following defaul
 """
     
     # LLM call
-    response = llm.invoke(prompt)
+    response = llm_gemini.invoke(prompt)
     # Try to parse JSON from LLM response
     logger.info(f"response lob: {response}")
     try:

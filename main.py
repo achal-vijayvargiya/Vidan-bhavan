@@ -6,6 +6,7 @@ from pathlib import Path
 from app.kramak_reader.agent import agent_run
 from app.database.db_init_postgresql import createtables
 from app.logging.logger import Logger
+from app.debate_agent.pdf_generater import PdfGenerater
 
 # Initialize logger
 logger = Logger()
@@ -14,8 +15,8 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent
 
 # BALANCED PRODUCTION: Configuration constants
-MAX_FOLDERS_TO_PROCESS = 10  # BALANCED: Increased from 3 for better productivity
-ENABLE_BATCH_PROCESSING = False  # Set to True only when needed
+MAX_FOLDERS_TO_PROCESS = 100  # BALANCED: Increased from 3 for better productivity
+ENABLE_BATCH_PROCESSING = True  # Set to True only when needed
 
 def run_streamlit_app():
     # Get the absolute path to app.py
@@ -61,9 +62,14 @@ def run_agent_on_all_kramank_folders(base_path):
         for i, folder in enumerate(kramank_folders, 1):
             try:
                 logger.info(f"📁 Processing folder {i}/{len(kramank_folders)}: {folder}")
+                # Run agent first
                 agent_run(folder)
+                
+                # Generate PDFs after successful agent run
+                generate_pdfs_for_folder(folder)
+                
                 total_processed += 1
-                logger.info(f"✅ Successfully processed: {folder}")
+                logger.info(f"✅ Successfully processed and generated PDFs for: {folder}")
                 
                 # COST OPTIMIZATION: Rate limiting between folder processing
                 if i < len(kramank_folders):  # Don't sleep after last folder
@@ -88,15 +94,45 @@ def run_agent_on_all_kramank_folders(base_path):
         logger.error(f"❌ Error in run_agent_on_all_kramank_folders: {str(e)}")
 
 
+def generate_pdfs_for_folder(folder_path):
+    """
+    Generate PDFs for all debates processed from a specific folder
+    """
+    logger.info(f"Generating PDFs for debates from folder: {folder_path}")
+    try:
+        # Initialize PDF generator with output directory in the folder
+        output_dir = "./generated_pdfs"
+        # Use the folder path as the base path for images
+        pdf_generator = PdfGenerater(output_dir=output_dir, image_base_path=folder_path)
+        
+        # Process all debates
+        generated_pdfs = pdf_generator.process_all_pending_debates()
+        
+        if generated_pdfs:
+            logger.info(f"✅ Successfully generated {len(generated_pdfs)} PDFs in {output_dir}")
+            for pdf in generated_pdfs:
+                logger.info(f"  📄 Generated: {pdf}")
+        else:
+            logger.warning(f"⚠️ No PDFs were generated for folder: {folder_path}")
+            
+    except Exception as e:
+        logger.error(f"❌ Error generating PDFs for folder {folder_path}: {str(e)}")
+        raise
+
 def run_single_folder(folder_path):
     """
-    Process a single Kramank folder safely.
+    Process a single Kramank folder safely and generate PDFs.
     COST OPTIMIZED: Use this for testing individual folders.
     """
     logger.info(f"Processing single folder: {folder_path}")
     try:
+        # Run the agent first
         agent_run(folder_path)
         logger.info(f"✅ Successfully processed: {folder_path}")
+        
+        # Generate PDFs after successful processing
+        generate_pdfs_for_folder(folder_path)
+        
     except Exception as e:
         logger.error(f"❌ Error processing folder {folder_path}: {str(e)}")
 
@@ -104,8 +140,9 @@ def run_single_folder(folder_path):
 if __name__ == "__main__":
     # create tables
     logger.info("🚀 Starting VidanBhavan processing with COST OPTIMIZATIONS")
-    createtables()
-
+    # createtables()
+    run_agent_on_all_kramank_folders(r"D:\Test2000\2000")
+                                     
     # folder_path = r"D:\Test2000\2000\MLA\Session_1_Budget\Kramank_1"
     
     # # COST OPTIMIZATION: Choose processing mode

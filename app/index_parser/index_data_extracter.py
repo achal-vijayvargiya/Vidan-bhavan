@@ -1,7 +1,7 @@
 from langchain.prompts import ChatPromptTemplate
 import json
 from dotenv import load_dotenv
-from app.config.OpenRouter import llm
+from app.config.OpenRouter import llm, llm_gemini
 import time
 from typing import List, Dict, Optional
 from langchain.memory import ConversationBufferMemory
@@ -79,7 +79,7 @@ class IndexDataExtractor:
         self.memory_key = "index_parser_previous_data"
         self.k = 1  # Only use last call history
         self.prompt = ChatPromptTemplate.from_template(INDEX_PARSER_TEMPLATE)
-        self.chain = self.prompt | llm
+        self.chain = self.prompt | llm_gemini
 
     def _is_duplicate_member(self, new_member: Dict) -> bool:
         """Check if member already exists"""
