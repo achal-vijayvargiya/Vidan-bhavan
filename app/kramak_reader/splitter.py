@@ -113,8 +113,10 @@ def extract_session_details(folder_path: str) -> Tuple[str, str, str, str]:
         Tuple[str, str, str, str]: (year, house, session_type, kramak_name)
     """
     import re
+    logger.info(f"Extracting session details from path: {folder_path}")
     
     path_parts = Path(folder_path).parts
+    logger.info(f"Path parts: {path_parts}")
     
     # Extract year using regex pattern for 4 digits
     year_pattern = r'\d{4}'
@@ -123,8 +125,9 @@ def extract_session_details(folder_path: str) -> Tuple[str, str, str, str]:
         year_match = re.search(year_pattern, part)
         if year_match:
             year = year_match.group()
+            logger.info(f"Found year: {year}")
             break
-            
+    
     # Extract house (MLA/MLC) using regex
     house_pattern = r'(MLA|MLC)'
     house = None
@@ -132,8 +135,9 @@ def extract_session_details(folder_path: str) -> Tuple[str, str, str, str]:
         house_match = re.search(house_pattern, part)
         if house_match:
             house = house_match.group()
+            logger.info(f"Found house: {house}")
             break
-            
+    
     # Extract session type from Session_X_Type format
     session_pattern = r'Session_\d+_(\w+)'
     session_type = None
@@ -141,20 +145,43 @@ def extract_session_details(folder_path: str) -> Tuple[str, str, str, str]:
         session_match = re.search(session_pattern, part)
         if session_match:
             session_type = session_match.group(1)
+            logger.info(f"Found session type: {session_type}")
             break
-            
-    # Extract kramak name (should be last part of path)
-    kramak_name = path_parts[-1]
     
-    # Validate all required fields are found
-    if not all([year, house, session_type, kramak_name]):
-        print(f"Warning: Some session details could not be extracted:")
-        print(f"Year: {year}")
-        print(f"House: {house}")
-        print(f"Session Type: {session_type}")
-        print(f"Kramak Name: {kramak_name}")
-        return None
+    # Extract kramak name from Kramank_X format
+    kramak_pattern = r'Kramank_(\d+)'
+    kramak_name = None
+    for part in reversed(path_parts):  # Search from end of path
+        kramak_match = re.search(kramak_pattern, part)
+        if kramak_match:
+            kramak_name = kramak_match.group(1)
+            logger.info(f"Found kramak name: {kramak_name}")
+            break
     
+    # Use defaults if not found
+    if not year:
+        year = "2000"  # Default year
+        logger.warning(f"Year not found in path, using default: {year}")
+    
+    if not house:
+        house = "MLA"  # Default house
+        logger.warning(f"House not found in path, using default: {house}")
+    
+    if not session_type:
+        session_type = "Budget"  # Default session type
+        logger.warning(f"Session type not found in path, using default: {session_type}")
+    
+    if not kramak_name:
+        # Try to extract number from the last part of the path
+        last_part = path_parts[-1]
+        number_match = re.search(r'\d+', last_part)
+        if number_match:
+            kramak_name = number_match.group()
+        else:
+            kramak_name = "1"  # Default kramak number
+        logger.warning(f"Kramak name not found in path, using: {kramak_name}")
+    
+    logger.info(f"Final session details - Year: {year}, House: {house}, Type: {session_type}, Kramak: {kramak_name}")
     return year, house, session_type, kramak_name
 
 
