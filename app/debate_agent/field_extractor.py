@@ -2,7 +2,7 @@ import re
 from typing import Dict
 from app.logging.logger import Logger
 from app.data_modals.debate import Debate
-
+from app.debate_parser.llm_parser import get_debate_data
 logger = Logger()
 
 def clean_text(text: str) -> str:
@@ -46,11 +46,21 @@ def validate_debate_data(debate: Dict) -> Dict:
     """Validate and clean debate data before database insertion"""
     cleaned_debate = {}
     
+    # Ensure sequence number is present
+    if 'sequence_number' not in debate:
+        logger.error("❌ Sequence number is required but not provided")
+        raise ValueError("Sequence number is required")
+    
     # Clean text fields
     cleaned_debate['topic'] = clean_text(debate.get('topic', ''))
     cleaned_debate['text'] = clean_text(debate.get('text', ''))
     cleaned_debate['document_name'] = clean_text(debate.get('document_name', ''))
     cleaned_debate['kramank_id'] = clean_text(debate.get('kramank_id', ''))
+    
+    # Copy required fields
+    cleaned_debate['sequence_number'] = debate['sequence_number']  # Already validated
+    cleaned_debate['vol'] = debate.get('vol')
+    cleaned_debate['chairman'] = debate.get('chairman')
     
     # Clean list fields
     cleaned_debate['members'] = clean_list(debate.get('members', []))
@@ -82,14 +92,14 @@ def extract_fields(debate: Dict, debate_type: Dict):
     """
     # Clean and validate debate data first
     cleaned_debate = validate_debate_data(debate)
-    
+    debate_data = extract_fields_llm(cleaned_debate['text'])
     # Extract fields from the Marathi text
-    if debate_type.get("lob_type") == "Devices":
-        debate_data = extract_fields_from_devices(cleaned_debate['text'])
-    elif debate_type.get("lob_type") == "Others":
-        debate_data = extract_fields_from_others(cleaned_debate['text'])
-    else:
-        debate_data = extract_fields_from_devices(cleaned_debate['text'])
+    # if debate_type.get("lob_type") == "Devices":
+    #     debate_data = extract_fields_from_devices(cleaned_debate['text'])
+    # elif debate_type.get("lob_type") == "Others":
+    #     debate_data = extract_fields_from_others(cleaned_debate['text'])
+    # else:
+    #     debate_data = extract_fields_from_devices(cleaned_debate['text'])
     
     # Clean extracted data
     if debate_data.get("date"):
@@ -100,7 +110,38 @@ def extract_fields(debate: Dict, debate_type: Dict):
         debate_data["answers_by"] = clean_list(debate_data["answers_by"])
     if debate_data.get("question_number"):
         debate_data["question_number"] = [clean_text(str(q)) for q in debate_data["question_number"] if q]
+    if debate_data.get("title"):
+        debate_data["title"] = clean_text(debate_data["title"])
+    else:
+        debate_data["title"] = cleaned_debate.get("title", cleaned_debate.get("topic", ""))
     
+    # Ensure topic is always set and not empty
+    if debate_data.get("topic"):
+        debate_data["topic"] = clean_text(debate_data["topic"])
+    else:
+        debate_data["topic"] = cleaned_debate.get("topic", "Unknown Topic")
+    
+    # Final validation to ensure topic is never empty
+    if not debate_data["topic"] or debate_data["topic"].strip() == "":
+        debate_data["topic"] = "Unknown Topic"
+    if debate_data.get("question_by"):
+        debate_data["question_by"] = clean_list(debate_data["question_by"])
+    if debate_data.get("topics"):
+        debate_data["topics"] = clean_list(debate_data["topics"])
+
+    # Final validation to ensure required fields are not empty
+    if not debate_data.get("topic") or debate_data["topic"].strip() == "":
+        logger.warning("⚠️ Topic is empty after extraction, using default")
+        debate_data["topic"] = "Unknown Topic"
+    
+    if not debate_data.get("title") or debate_data["title"].strip() == "":
+        logger.warning("⚠️ Title is empty after extraction, using topic as title")
+        debate_data["title"] = debate_data["topic"]
+    
+    # Debug logging
+    logger.info(f"🔍 Final topic: '{debate_data.get('topic', 'NOT_SET')}'")
+    logger.info(f"🔍 Final title: '{debate_data.get('title', 'NOT_SET')}'")
+
     # Prepare Debate data modal object
     try:
         debate_obj = Debate(
@@ -116,10 +157,14 @@ def extract_fields(debate: Dict, debate_type: Dict):
             question_by=None,  # Could be extracted if available
             answer_by=debate_data.get("answers_by", [None])[0] if debate_data.get("answers_by") else None,
             ministry=None,  # Could be extracted if available
-            topic=cleaned_debate.get("topic", ""),
+            title=debate_data.get("title",""),
+            topic=debate_data.get("topic",""),
             text=cleaned_debate.get("text", ""),
             image_name=cleaned_debate.get("image_name", []),
-            place=cleaned_debate.get("place")
+            place=cleaned_debate.get("place"),
+            sequence_number=debate.get("sequence_number"),  # Add sequence number
+            vol=debate.get("vol"),  # Add volume
+            chairman=debate.get("chairman")  # Add chairman
         )
         
         logger.info(f"✅ Created debate object with topic: {debate_obj.topic[:50]}...")
@@ -149,6 +194,18 @@ def extract_fields_from_others(text):
     members = re.findall(members_pattern, text)
     data["members"] = list(set(members))  # unique
 
+    return data
+def extract_fields_llm(text):
+    """
+    Extract fields from debate text using the LLM parser.
+    """
+    
+    data = get_debate_data(text)
+    if not data:
+        logger.error("❌ LLM extraction failed or returned no data.")
+        return {}
+
+    # Optionally, clean or post-process data here if needed
     return data
 
 def extract_fields_from_devices(text):

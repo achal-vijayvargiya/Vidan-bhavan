@@ -28,8 +28,6 @@ MEMBER_PARSER_TEMPLATE = """You are a document parser working on Marathi Vidhan 
 Previous members processed:
 {previous_members}
 
-A mapping for token compression is provided below. Before extracting data, first decompress the text chunk by replacing numbers with their corresponding words from the mapping:
-{mapping}
 
 Extract the following structured data from the given text chunk:
 
@@ -146,9 +144,6 @@ class MemberParser:
             previous_member_names = [m["name"] for m in previous_members if isinstance(m, dict) and "name" in m]
             previous_members_json = json.dumps(previous_member_names, ensure_ascii=False)
             
-            # Optimize tokens in the text chunk
-            optimized_text, mapping = optimize_tokens(text_chunk)
-            mapping_json = json.dumps(mapping, ensure_ascii=False)
             
             # PRODUCTION: Make LLM call if not cached - processing all chunks
             logger.info(f"🤖 Invoking LLM for member chunk {self.processed_chunks + 1}")
@@ -162,8 +157,7 @@ class MemberParser:
                 try:
                     response = self.chain.invoke({
                         "previous_members": previous_members_json,
-                        "text_chunk": optimized_text,
-                        "mapping": mapping_json
+                        "text_chunk": text_chunk
                     })
                     break  # Success, exit retry loop
                 except Exception as e:

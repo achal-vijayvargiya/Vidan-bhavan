@@ -4,7 +4,9 @@ from .db_storage import store_debate_data
 from typing import List, Dict
 from app.logging.logger import Logger
 from app.data_modals.debate import Debate
+from app.data_modals.kramank import Kramank
 from app.database.db_insert import insert_debate
+from app.database.db_conn_postgresql import get_db
 
 logger = Logger()
 
@@ -13,7 +15,7 @@ class DebateAgent:
         self.session_id = None
         self.kramak_id = None
 
-    def process_debate(self, debates: List[dict], session_id: str, kramak_id: str) -> List[Dict]:
+    def process_debate(self, debates: List[dict], session_id: str, kramak_id: str) -> Dict:
         """
         Process debates and store in database
         """
@@ -22,7 +24,7 @@ class DebateAgent:
         
         logger.info(f"🎯 Processing {len(debates)} debates")
         
-        processed_debates = []
+        debate_ids = []
         
         try:
             for i, debate in enumerate(debates, 1):
@@ -53,10 +55,23 @@ class DebateAgent:
                             "lob_type": "others"
                         }
                     
+                    # Get kramank data from database
+                    db = next(get_db())
+                    kramank = db.query(Kramank).filter_by(kramank_id=kramak_id).first()
+                    db.close()
+
+                    if not kramank:
+                        logger.error(f"❌ Kramank not found for ID: {kramak_id}")
+                        continue
+
                     # Set required fields for debate
                     debate["document_name"] = debate.get("topic", "Unknown") + "_Document"
                     debate["kramank_id"] = kramak_id
                     debate["session_id"] = session_id
+                    debate["sequence_number"] = i  # Add sequence number based on position
+                    debate["date"] = kramank.date  # Use date from kramank
+                    debate["vol"] = kramank.vol  # Use volume from kramank
+                    debate["chairman"] = kramank.chairman  # Use chairman from kramank
                     debate["lob"] = type_info.get("lob", "")
                     debate["sub_lob"] = type_info.get("sub_lob", "")
                     debate["lob_type"] = type_info.get("lob_type", "")
@@ -73,48 +88,27 @@ class DebateAgent:
                         logger.info(f"📊 Extracted fields: question_no={getattr(debate_obj, 'question_no', 'None')}, members={len(getattr(debate_obj, 'members', []))}")
                         logger.info(f"Debate text: {debate_obj.text}")
                         # Step 3: Store in DB
-                        insert_debate(debate_obj)
+                        inserted_debate = insert_debate(debate_obj)
                         
-                        # Convert Debate object to dict for response
-                        debate_dict = {
-                            'debate_topic': debate_topic,
-                            'classification': type_info,
-                            'extracted_fields': {
-                                'question_no': getattr(debate_obj, 'question_no', None),
-                                'question_by': getattr(debate_obj, 'question_by', None),
-                                'answer_by': getattr(debate_obj, 'answer_by', None),
-                                'ministry': getattr(debate_obj, 'ministry', None),
-                                'topic': getattr(debate_obj, 'topic', None),
-                                'text': getattr(debate_obj, 'text', None),
-                                'members': getattr(debate_obj, 'members', []),
-                                'lob_type': getattr(debate_obj, 'lob_type', None),
-                                'lob': getattr(debate_obj, 'lob', None),
-                                'sub_lob': getattr(debate_obj, 'sub_lob', None)
-                            },
-                            'status': 'success'
-                        }
-                        processed_debates.append(debate_dict)
-                        logger.info(f"✅ Debate {i} processed and stored successfully")
+                        # Collect debate ID
+                        if inserted_debate and hasattr(inserted_debate, 'debate_id'):
+                            debate_ids.append(inserted_debate.debate_id)
+                            logger.info(f"✅ Debate {i} processed and stored successfully with ID: {inserted_debate.debate_id}")
+                        else:
+                            logger.error(f"❌ Failed to get debate ID for debate {i}")
                     else:
                         logger.error(f"❌ Failed to extract fields for debate {i}")
                         
                 except Exception as e:
                     logger.error(f"❌ Error processing debate {i}: {str(e)}")
-                    processed_debates.append({
-                        'debate_topic': debate.get('topic', 'Unknown'),
-                        'status': 'error',
-                        'error': str(e)
-                    })
                     continue
             
-            return processed_debates
+            return {kramak_id: debate_ids}
             
         except Exception as e:
             logger.error(f"❌ Critical error in debate processing: {str(e)}")
             return {
                 'status': 'error',
                 'error': str(e),
-                'processed_debates': processed_debates,
-                'session_id': self.session_id,
                 'kramak_id': self.kramak_id
             }

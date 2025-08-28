@@ -286,7 +286,7 @@ class ApiService:
     # ==================== DEBATE SERVICES ====================
     
     def get_all_debates(self) -> Dict[str, Any]:
-        """Get all debates with summary statistics"""
+        """Get all active debates with summary statistics"""
         try:
             debates = self.data_fetcher.select_all_debates()
             
@@ -303,7 +303,7 @@ class ApiService:
                 }
             }
             
-            logger.info(f"✅ Retrieved {len(debates)} debates via API")
+            logger.info(f"✅ Retrieved {len(debates)} active debates via API")
             return result
             
         except Exception as e:
@@ -434,17 +434,36 @@ class ApiService:
         """Get all resolutions for a specific session"""
         try:
             resolutions = self.data_fetcher.select_resolutions_by_session(session_id)
+            logger.info(f"✅ Retrieved {len(resolutions)} resolutions for session {session_id} via API")
+            
+            # Debug: Check the first resolution object
+            if resolutions:
+                first_resolution = resolutions[0]
+                logger.info(f"Debug: First resolution object type: {type(first_resolution)}")
+                logger.info(f"Debug: First resolution attributes: {dir(first_resolution)}")
+                logger.info(f"Debug: First resolution resolution_no_en: {getattr(first_resolution, 'resolution_no_en', 'NOT_FOUND')}")
+            
+            serialized_resolutions = []
+            for i, resolution in enumerate(resolutions):
+                try:
+                    serialized = self._serialize_resolution(resolution)
+                    serialized_resolutions.append(serialized)
+                except Exception as serialize_error:
+                    logger.error(f"❌ Error serializing resolution {i}: {str(serialize_error)}")
+                    logger.error(f"❌ Resolution object: {resolution}")
+                    logger.error(f"❌ Resolution attributes: {dir(resolution)}")
+                    # Continue with other resolutions
+                    continue
             
             result = {
                 "success": True,
                 "data": {
                     "session_id": session_id,
-                    "resolutions": [self._serialize_resolution(resolution) for resolution in resolutions],
-                    "count": len(resolutions)
+                    "resolutions": serialized_resolutions,
+                    "count": len(serialized_resolutions)
                 }
             }
             
-            logger.info(f"✅ Retrieved {len(resolutions)} resolutions for session {session_id} via API")
             return result
             
         except Exception as e:
@@ -590,6 +609,7 @@ class ApiService:
             "id": str(debate.debate_id),  # Changed from debate_id to id for UI compatibility
             "document_name": debate.document_name,
             "kramank_id": str(debate.kramank_id) if hasattr(debate.kramank_id, '__str__') else debate.kramank_id,
+            "sequence_number": debate.sequence_number,  # Add sequence number
             "date": debate.date,
             "members": debate.members,
             "lob_type": debate.lob_type,
@@ -599,6 +619,7 @@ class ApiService:
             "question_by": debate.question_by,
             "answer_by": debate.answer_by,
             "ministry": debate.ministry,
+            "title": debate.title,  # Add title field
             "topic": debate.topic,
             "text": debate.text,  # Added full text for UI
             "text_length": len(debate.text) if debate.text else 0,
@@ -606,7 +627,7 @@ class ApiService:
             "image_name": debate.image_name,
             "place": debate.place,
             # Additional fields expected by UI
-            "status": "active",  # Default status
+            "status": debate.status,  # Use actual status from database
             "user": "system",  # Default user
             "last_update": debate.date,  # Use date as last update
             "question_number": debate.question_no,  # Alias for question_no
@@ -616,11 +637,36 @@ class ApiService:
     
     def _serialize_resolution(self, resolution: Resolution) -> Dict[str, Any]:
         """Serialize resolution object to dictionary"""
-        return {
-            "resolution_id": str(resolution.resolution_id) if hasattr(resolution.resolution_id, '__str__') else resolution.resolution_id,
-            "session_id": resolution.session_id,
-            "title": resolution.title,
-            "content": resolution.content,
-            "date": resolution.date,
-            "status": resolution.status
-        }
+        try:
+            return {
+                "resolution_id": str(resolution.resolution_id) if hasattr(resolution.resolution_id, '__str__') else resolution.resolution_id,
+                "session_id": getattr(resolution, 'session_id', ''),
+                "resolution_no": getattr(resolution, 'resolution_no', ''),
+                "resolution_no_en": getattr(resolution, 'resolution_no_en', ''),
+                "title": getattr(resolution, 'resolution_no_en', ''),  # Use resolution_no_en as title
+                "content": getattr(resolution, 'text', ''),  # Use text as content
+                "text": getattr(resolution, 'text', ''),
+                "image_name": getattr(resolution, 'image_name', []),
+                "place": getattr(resolution, 'place', ''),
+                # Additional fields for UI compatibility
+                "date": getattr(resolution, 'place', ''),  # Use place as date (temporary)
+                "status": "active"  # Default status
+            }
+        except Exception as e:
+            logger.error(f"❌ Error in _serialize_resolution: {str(e)}")
+            logger.error(f"❌ Resolution object: {resolution}")
+            logger.error(f"❌ Resolution attributes: {dir(resolution)}")
+            # Return a safe fallback
+            return {
+                "resolution_id": "error",
+                "session_id": "",
+                "resolution_no": "",
+                "resolution_no_en": "",
+                "title": "Error loading resolution",
+                "content": "",
+                "text": "",
+                "image_name": [],
+                "place": "",
+                "date": "",
+                "status": "error"
+            }

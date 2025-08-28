@@ -13,8 +13,8 @@ def normalize_text(text: str) -> str:
     """Normalize text for better matching by removing extra spaces and punctuation"""
     # Remove extra whitespace and normalize
     normalized = re.sub(r'\s+', ' ', text.strip())
-    # Remove common punctuation that might cause issues
-    normalized = re.sub(r'[।॥]', '', normalized)
+    
+   
     # Remove common OCR artifacts
     normalized = re.sub(r'[^\w\s]', '', normalized)
     return normalized
@@ -187,7 +187,7 @@ def process_ocr_headings(ocr_results: List[Dict]) -> List[Dict]:
                         if start_pos == -1:
                             logger.warning(f"⚠️ Couldn't find heading text in page content: {heading_text[:50]}...")
                             # Try to log some context for debugging
-                            logger.debug(f"Page text preview: {text[:200]}...")
+                            logger.debug(f"Page text preview: {text}...")
                             continue
                             
                         # Get end position - either start of next heading or end of text
@@ -201,13 +201,11 @@ def process_ocr_headings(ocr_results: List[Dict]) -> List[Dict]:
                             
                         # Extract text between current heading and next heading/end
                         debate_text = text[start_pos:end_pos].strip()
-                        
+                        logger.info(f"Debate text: {debate_text}")
                         # Process debate if we have enough content
-                        if len(debate_text) > 1:
-                            process_debate(debate_text, image_name, heading_text, debates)
-                            logger.info(f"✅ Added debate with length {len(debate_text)}")
-                        else:
-                            logger.warning(f"⚠️ Skipped debate text (too short): {debate_text}")
+                        i
+                        process_debate(debate_text, image_name, heading_text, debates)
+                        logger.info(f"✅ Added debate with length {len(debate_text)}")
                             
                     except Exception as heading_error:
                         logger.error(f"❌ Error processing heading: {str(heading_error)}")

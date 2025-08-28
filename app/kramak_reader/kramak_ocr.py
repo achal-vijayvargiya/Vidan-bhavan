@@ -67,7 +67,8 @@ def kramank_ocr(folder_path: str, kramak_name: str) -> Dict:
             page_ocr = {
                 "text": result["text"],
                 "headings": result["headings"],
-                "image_name": image_file.name
+                "image_name": image_file.name,
+                "bounding_boxes": result["bounding_boxes"]
             }
 
             # Determine if this kramank should only have index and debates (kramank number != 1)
@@ -223,7 +224,14 @@ def extract_text_from_image(image_path: str) -> Dict:
     client = setup_vision_client()
     result = {
         "text": "",
-        "headings": []
+        "headings": [],
+        "bounding_boxes": {
+            "page_info": {},
+            "blocks": [],
+            "paragraphs": [],
+            "words": [],
+            "symbols": []
+        }
     }
 
     with open(image_path, 'rb') as image_file:
@@ -241,23 +249,84 @@ def extract_text_from_image(image_path: str) -> Dict:
     # Full plain text
     result["text"] = response.full_text_annotation.text
     
-   
     page = response.full_text_annotation.pages[0]
     page_width = page.width
+    page_height = page.height
 
-    for block in page.blocks:
-        for para in block.paragraphs:
+    # Store page information
+    result["bounding_boxes"]["page_info"] = {
+        "width": page_width,
+        "height": page_height,
+        "confidence": page.confidence
+    }
+
+    # Process blocks, paragraphs, words, and symbols with bounding boxes
+    for block_idx, block in enumerate(page.blocks):
+        block_data = {
+            "index": block_idx,
+            "confidence": block.confidence,
+            "bounding_box": {
+                "vertices": [(v.x, v.y) for v in block.bounding_box.vertices]
+            },
+            "paragraphs": []
+        }
+        
+        for para_idx, para in enumerate(block.paragraphs):
+            para_data = {
+                "index": para_idx,
+                "confidence": para.confidence,
+                "bounding_box": {
+                    "vertices": [(v.x, v.y) for v in para.bounding_box.vertices]
+                },
+                "words": []
+            }
+            
             line_text = ""
-            for word in para.words:
-                line_text += "".join([s.text for s in word.symbols]) + " "
-
+            for word_idx, word in enumerate(para.words):
+                word_text = "".join([s.text for s in word.symbols])
+                line_text += word_text + " "
+                
+                word_data = {
+                    "index": word_idx,
+                    "text": word_text,
+                    "confidence": word.confidence,
+                    "bounding_box": {
+                        "vertices": [(v.x, v.y) for v in word.bounding_box.vertices]
+                    },
+                    "symbols": []
+                }
+                
+                for symbol_idx, symbol in enumerate(word.symbols):
+                    symbol_data = {
+                        "index": symbol_idx,
+                        "text": symbol.text,
+                        "confidence": symbol.confidence,
+                        "bounding_box": {
+                            "vertices": [(v.x, v.y) for v in symbol.bounding_box.vertices]
+                        }
+                    }
+                    word_data["symbols"].append(symbol_data)
+                    result["bounding_boxes"]["symbols"].append(symbol_data)
+                
+                para_data["words"].append(word_data)
+                result["bounding_boxes"]["words"].append(word_data)
+            
+            # Check if this paragraph is a heading
             font_height = estimate_font_height(para.bounding_box)
             if (
                 is_center_aligned(para.bounding_box, page_width)
                 and font_height >= 25
                 and 5 < len(line_text.strip()) < 50
             ):
-                result["headings"].append(line_text)
+                result["headings"].append(line_text.strip())
+                para_data["is_heading"] = True
+            else:
+                para_data["is_heading"] = False
+            
+            block_data["paragraphs"].append(para_data)
+            result["bounding_boxes"]["paragraphs"].append(para_data)
+        
+        result["bounding_boxes"]["blocks"].append(block_data)
 
     return result
 

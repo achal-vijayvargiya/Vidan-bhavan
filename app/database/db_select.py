@@ -224,11 +224,11 @@ class DataFetcher:
     # ==================== DEBATE OPERATIONS ====================
     
     def select_all_debates(self) -> List[Debate]:
-        """Select all debates from database"""
+        """Select all active debates from database"""
         try:
             db = self._get_db_session()
-            debates = db.query(Debate).all()
-            logger.info(f"✅ Retrieved {len(debates)} debates")
+            debates = db.query(Debate).filter(Debate.status == 'active').all()
+            logger.info(f"✅ Retrieved {len(debates)} active debates")
             return debates
         except Exception as e:
             logger.error(f"❌ Error selecting all debates: {str(e)}")
@@ -253,11 +253,14 @@ class DataFetcher:
             self._close_db_session()
     
     def select_debates_by_kramank_id(self, kramank_id: str) -> List[Debate]:
-        """Select all debates for a specific kramank ID"""
+        """Select all active debates for a specific kramank ID"""
         try:
             db = self._get_db_session()
-            debates = db.query(Debate).filter(Debate.kramank_id == kramank_id).all()
-            logger.info(f"✅ Retrieved {len(debates)} debates for kramank {kramank_id}")
+            debates = db.query(Debate).filter(
+                Debate.kramank_id == kramank_id,
+                Debate.status == 'active'
+            ).all()
+            logger.info(f"✅ Retrieved {len(debates)} active debates for kramank {kramank_id}")
             return debates
         except Exception as e:
             logger.error(f"❌ Error selecting debates by kramank ID {kramank_id}: {str(e)}")
@@ -266,12 +269,15 @@ class DataFetcher:
             self._close_db_session()
     
     def select_debates_by_session_id(self, session_id: str) -> List[Debate]:
-        """Select all debates for a specific session ID (through kramanks)"""
+        """Select all active debates for a specific session ID (through kramanks)"""
         try:
             db = self._get_db_session()
-            # Join with kramanks to filter by session_id
-            debates = db.query(Debate).join(Kramank).filter(Kramank.session_id == session_id).all()
-            logger.info(f"✅ Retrieved {len(debates)} debates for session {session_id}")
+            # Join with kramanks to filter by session_id and only active debates
+            debates = db.query(Debate).join(Kramank).filter(
+                Kramank.session_id == session_id,
+                Debate.status == 'active'
+            ).all()
+            logger.info(f"✅ Retrieved {len(debates)} active debates for session {session_id}")
             return debates
         except Exception as e:
             logger.error(f"❌ Error selecting debates by session ID {session_id}: {str(e)}")
@@ -280,11 +286,14 @@ class DataFetcher:
             self._close_db_session()
     
     def select_debates_by_topic(self, topic: str) -> List[Debate]:
-        """Select debates by topic (partial match)"""
+        """Select active debates by topic (partial match)"""
         try:
             db = self._get_db_session()
-            debates = db.query(Debate).filter(Debate.topic.ilike(f"%{topic}%")).all()
-            logger.info(f"✅ Retrieved {len(debates)} debates matching topic '{topic}'")
+            debates = db.query(Debate).filter(
+                Debate.topic.ilike(f"%{topic}%"),
+                Debate.status == 'active'
+            ).all()
+            logger.info(f"✅ Retrieved {len(debates)} active debates matching topic '{topic}'")
             return debates
         except Exception as e:
             logger.error(f"❌ Error selecting debates by topic '{topic}': {str(e)}")
@@ -293,11 +302,14 @@ class DataFetcher:
             self._close_db_session()
     
     def select_debates_by_lob_type(self, lob_type: str) -> List[Debate]:
-        """Select debates by LOB type"""
+        """Select active debates by LOB type"""
         try:
             db = self._get_db_session()
-            debates = db.query(Debate).filter(Debate.lob_type == lob_type).all()
-            logger.info(f"✅ Retrieved {len(debates)} debates with LOB type '{lob_type}'")
+            debates = db.query(Debate).filter(
+                Debate.lob_type == lob_type,
+                Debate.status == 'active'
+            ).all()
+            logger.info(f"✅ Retrieved {len(debates)} active debates with LOB type '{lob_type}'")
             return debates
         except Exception as e:
             logger.error(f"❌ Error selecting debates by LOB type '{lob_type}': {str(e)}")

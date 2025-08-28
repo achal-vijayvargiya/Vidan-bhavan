@@ -16,6 +16,7 @@ from app.data_modals.resolution import Resolution
 from app.data_modals.kramank import Kramank
 from app.database.db_insert import insert_session, insert_member, insert_kramank, insert_resolution
 from app.database.db_conn_postgresql import get_db
+from app.database.redis_cache import delete_llm_cache
 from app.index_parser.index_data_extracter import extract_index_data
 from app.members_agent.member_agent import MemberAgent
 import re
@@ -64,13 +65,32 @@ def agent_run(folder_path=None, kramak_name=None):
         else:
             logger.info("Running kramank_ocr and saving results")
             ocr_results, full_text = kramank_ocr(folder_path, kramak_name)
-            with open(ocr_text_path, "w", encoding="utf-8") as f:
-                f.write(full_text)
-            with open(ocr_results_path, "w", encoding="utf-8") as f:
-                json.dump(ocr_results, f, ensure_ascii=False, indent=2)
+            
+            # Save OCR results with error handling for permission issues
+            try:
+                with open(ocr_text_path, "w", encoding="utf-8") as f:
+                    f.write(full_text)
+                logger.info(f"Saved OCR text to {ocr_text_path}")
+            except PermissionError as e:
+                logger.warning(f"Permission denied saving OCR text to {ocr_text_path}: {str(e)}")
+                logger.info("Continuing without saving OCR text file")
+            except Exception as e:
+                logger.warning(f"Failed to save OCR text to {ocr_text_path}: {str(e)}")
+                logger.info("Continuing without saving OCR text file")
+            
+            try:
+                with open(ocr_results_path, "w", encoding="utf-8") as f:
+                    json.dump(ocr_results, f, ensure_ascii=False, indent=2)
+                logger.info(f"Saved OCR results to {ocr_results_path}")
+            except PermissionError as e:
+                logger.warning(f"Permission denied saving OCR results to {ocr_results_path}: {str(e)}")
+                logger.info("Continuing without saving OCR results file")
+            except Exception as e:
+                logger.warning(f"Failed to save OCR results to {ocr_results_path}: {str(e)}")
+                logger.info("Continuing without saving OCR results file")
        
         adhyaksha_line = extract_adhyaksha(full_text)
-        date_line = extract_date_from_marathi_text(full_text)
+        # date_line = extract_date_from_marathi_text(full_text)
         index_data = extract_index_data(ocr_results.get('index', {}))
         #    if condition for kramak_name is 1 then extract karyavali data
         if str(kramak_name) == "1":
@@ -93,13 +113,14 @@ def agent_run(folder_path=None, kramak_name=None):
         for resolution in karyavali_data:
             try:
                 # Prepare Resolution object (no kramank_id field in model)
+                # Fields are already normalized in karyavali_parser
                 resolution_obj = Resolution(
                     session_id=session_id,
-                    resolution_no=resolution.get("resolution_no") or resolution.get("number"),
-                    resolution_no_en=resolution.get("resolution_no_en") or resolution.get("number_en") or resolution.get("number"),
-                    text=resolution.get("text"),
-                    image_name=resolution.get("image_name") or (karyawali_image_names if karyawali_image_names else None),
-                    place=resolution.get("place") or place_value
+                    resolution_no=resolution["resolution_no"],  # Now guaranteed to exist
+                    resolution_no_en=resolution["resolution_no_en"],  # Now guaranteed to exist
+                    text=resolution["text"],
+                    image_name=resolution["image_name"] or karyawali_image_names,
+                    place=resolution["place"] or place_value
                 )
                 inserted_resolution = insert_resolution(resolution_obj)
                 inserted_resolutions.append(inserted_resolution)
@@ -108,7 +129,6 @@ def agent_run(folder_path=None, kramak_name=None):
                 logger.error(f"Failed to insert resolution {resolution.get('resolution_no') or resolution.get('number')}: {str(e)}")
 
         
-        logger.info(f"Extracted adhyaksha: {adhyaksha_line}, date: {date_line}")
         
         
         
@@ -140,10 +160,11 @@ def agent_run(folder_path=None, kramak_name=None):
             kramank_id=custom_kramank_id,  # Set the ID explicitly
             session_id=session_id,
             number=kramak_name,
-            date=date_line,
+            date=index_data.get("date", ""),
             chairman=adhyaksha_line,
             document_name=str(folder_path),
-            full_ocr_text=full_text
+            full_ocr_text=full_text,
+            vol=index_data.get("khand", "")  # Add volume/khand number
         )
 
         # Insert kramank and get the inserted object back
@@ -156,10 +177,36 @@ def agent_run(folder_path=None, kramak_name=None):
             debates_pages = ocr_results.get('debates', [])
             logger.info(f"Extracted {len(debates_pages)} debates pages from OCR results")
             debates = process_ocr_headings(debates_pages)
-            
+            # INSERT_YOUR_CODE
+            # Save debates to split_debates.txt at ocr_results_path
+            try:
+                split_debates_path = Path(folder_path) / "split_debates.txt"
+                with open(split_debates_path, "w", encoding="utf-8") as f:
+                    for debate in debates:
+                        topic = debate.get("topic", "")
+                        text = debate.get("text", "")
+                        f.write(f"--- Debate Topic: {topic} ---\n")
+                        f.write(text)
+                        f.write("\n\n")
+                logger.info(f"Debates saved to {split_debates_path}")
+            except PermissionError as e:
+                logger.warning(f"Permission denied saving debates to {split_debates_path}: {str(e)}")
+                logger.info("Continuing without saving debates file")
+            except Exception as e:
+                logger.warning(f"Failed to save debates to {split_debates_path}: {str(e)}")
+                logger.info("Continuing without saving debates file")
             # Initialize and run debate agent
             debates_agent = DebateAgent()
-            debates_agent.process_debate(debates, session_id, kramak_id)
+            debate_ids=debates_agent.process_debate(debates, session_id, kramak_id)
+            ocr_results['debate_ids']=debate_ids
+            # Clear all Redis caches after complete processing
+            try:
+                # Clear LLM caches
+                delete_llm_cache("*")  # Delete all keys
+                logger.info("✅ All Redis caches cleared successfully")
+            except Exception as e:
+                logger.error(f"❌ Error clearing Redis caches: {str(e)}")
+            return ocr_results    
         else:
             logger.error("Failed to get kramak_id, skipping debate processing")
             

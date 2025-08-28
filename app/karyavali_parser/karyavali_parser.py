@@ -5,7 +5,7 @@ import json
 import hashlib
 from functools import lru_cache
 from dotenv import load_dotenv
-from app.config.OpenRouter import llm
+from app.config.OpenRouter import llm, llm_gemini
 import time
 from langchain.memory import ConversationBufferMemory
 from app.logging.logger import Logger
@@ -74,7 +74,7 @@ class KaryavaliParser:
         self.memory_key = "karyavali_parser_previous_resolutions"
         self.k = 1  # Only use last call history
         self.prompt = ChatPromptTemplate.from_template(KARYAVALI_PARSER_TEMPLATE)
-        self.chain = self.prompt | llm
+        self.chain = self.prompt | llm_gemini
         self.processed_chunks = 0  # Track processed chunks
 
     def _get_chunk_cache_key(self, text_chunk: str, previous_resolutions: str, mapping: str) -> str:
@@ -191,13 +191,26 @@ class KaryavaliParser:
                 
                 added_count = 0
                 for resolution in new_resolutions:
-                    if (isinstance(resolution, dict) and 
-                        all(key in resolution for key in ["number", "text"]) and 
-                        not self._is_duplicate_resolution(resolution)):
-                        self.resolutions.append(resolution)
+                    if isinstance(resolution, dict):
+                        # Ensure consistent field names
+                        normalized_resolution = {
+                            "resolution_no": resolution.get("resolution_no") or resolution.get("number", ""),
+                            "resolution_no_en": resolution.get("resolution_no_en") or resolution.get("number_en", ""),
+                            "text": resolution.get("text", ""),
+                            "image_name": resolution.get("image_name", None),
+                            "place": resolution.get("place", None)
+                        }
+                        
+                        # Skip resolutions without a number
+                        if not normalized_resolution["resolution_no"]:
+                            logger.warning(f"Skipping resolution without number: {resolution}")
+                            continue
+                            
+                        self.resolutions.append(normalized_resolution)
                         added_count += 1
-                        logger.info(f"Added new resolution: {resolution['number']}")
-                
+                        logger.info(f"Added new resolution: {normalized_resolution['resolution_no']}")
+                    else:
+                        logger.info(f"Skipping invalid resolution: {resolution}")
                 self._update_memory()
                 logger.info(f"✅ Chunk {self.processed_chunks} processed. Added {added_count} new resolutions. Total: {len(self.resolutions)}")
                 return self.resolutions
@@ -242,10 +255,7 @@ class KaryavaliParser:
             chunks.append('\n'.join(current_chunk))
         
         # COST OPTIMIZATION: Limit total chunks
-        if len(chunks) > MAX_CHUNKS_PER_SESSION:
-            logger.warning(f"⚠️  COST PROTECTION: Found {len(chunks)} chunks. Processing only first {MAX_CHUNKS_PER_SESSION} to control costs.")
-            logger.warning(f"⚠️  To process more chunks, increase MAX_CHUNKS_PER_SESSION in karyavali_parser.py")
-            chunks = chunks[:MAX_CHUNKS_PER_SESSION]
+       
         
         logger.info(f"Processing {len(chunks)} chunks with COST CONTROLS...")
         
@@ -262,6 +272,14 @@ class KaryavaliParser:
                 time.sleep(RATE_LIMIT_DELAY)
         
         logger.info(f"✅ Finished processing {self.processed_chunks} chunks. Total resolutions: {len(self.resolutions)}")
+        
+        # Clear Redis cache after processing is complete
+        try:
+            delete_llm_cache(self.memory_key)
+            logger.info("✅ Redis cache cleared successfully")
+        except Exception as e:
+            logger.error(f"❌ Error clearing Redis cache: {str(e)}")
+            
         return self.resolutions
 
 def extract_karyavali_blocks(text: str, session_id: int = None, kramak_id: int = None) -> List[Dict]:

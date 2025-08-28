@@ -34,6 +34,8 @@ class UserCreate(BaseModel):
     department: Optional[str] = None
     position: Optional[str] = None
 
+from uuid import UUID
+
 class UserResponse(BaseModel):
     user_id: str
     username: str
@@ -118,8 +120,27 @@ def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
             detail="Invalid username or password"
         )
     
+    # Create a dictionary with string user_id to avoid UUID validation issues
+    user_dict = {
+        "user_id": str(user.user_id),
+        "username": user.username,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "role": user.role,
+        "is_active": user.is_active,
+        "is_verified": user.is_verified,
+        "phone_number": user.phone_number,
+        "department": user.department,
+        "position": user.position,
+        "profile_image_url": user.profile_image_url,
+        "last_login": user.last_login,
+        "created_at": user.created_at,
+        "updated_at": user.updated_at
+    }
+    
     return {
-        "user": user,
+        "user": user_dict,
         "message": "Login successful"
     }
 
@@ -136,7 +157,26 @@ def get_current_user(username: str, db: Session = Depends(get_db)):
             detail="User not found"
         )
     
-    return user
+    # Create a dictionary with string user_id to avoid UUID validation issues
+    user_dict = {
+        "user_id": str(user.user_id),
+        "username": user.username,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "role": user.role,
+        "is_active": user.is_active,
+        "is_verified": user.is_verified,
+        "phone_number": user.phone_number,
+        "department": user.department,
+        "position": user.position,
+        "profile_image_url": user.profile_image_url,
+        "last_login": user.last_login,
+        "created_at": user.created_at,
+        "updated_at": user.updated_at
+    }
+    
+    return user_dict
 
 @router.get("/", response_model=List[UserResponse])
 def get_all_users(

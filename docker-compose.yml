@@ -48,6 +48,9 @@ services:
     # No public ports exposed - only accessible within the network
     volumes:
       - ./:/app
+      - /home/hpds/vidhan-bhavan/Test2000/2000:/app/data/kramank
+      - ./app/config/gcp_config_old.json:/app/app/config/gcp_config.json
+      - temp_data:/app/temp
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
@@ -56,6 +59,7 @@ services:
       - REDIS_PORT=6379
       - REDIS_DB=0
       - ENVIRONMENT=production
+      - KRAMANK_BASE_PATH=/app/data/kramank  # Path inside the container where Kramank folders will be mounted
     networks:
       - vidhan-bhavan-network
     depends_on:
@@ -129,3 +133,4 @@ volumes:
   postgres_data:
   redis_data:
   frontend_build:
+  temp_data:

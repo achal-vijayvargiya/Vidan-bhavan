@@ -17,16 +17,20 @@ DEBATE_PARSER_TEMPLATE = """You are a document parser working on Marathi Vidhan 
 
 Extract the following structured data from the given debate text:
 
+- title: (e.g., "विधानसभा वार्षिक बजट विषयक विचारणा")
 - date: (e.g., "१३ मार्च २०००")
 - question_number(s): (e.g., [45, 46])
+- question_by: list of names who asked the question
 - members: list of names involved (asking or speaking)
 - topics: key issues or bill subjects
 - answers_by: list of names who responded (with or without colon)
 
 📌 Return output as valid JSON:
 {{
+  "title": "Debate Title",
   "date": "",
   "question_number": [],
+  "question_by": [],
   "members": [],
   "topics": [],
   "answers_by": []
@@ -36,7 +40,7 @@ IMPORTANT: When generating Marathi text responses:
 2. Preserve all Marathi characters, numbers and formatting
 3. Do not add any English text or translations
 4. Return only the extracted Marathi text exactly as it appears in source
-
+5. If any field is not present, then return empty list for that field
 DO NOT return extra text, markdown, or comments.
 
 Text:

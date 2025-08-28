@@ -14,6 +14,7 @@ class Kramank(Base):
     chairman = Column(String, nullable=True)
     document_name = Column(String, nullable=True)
     full_ocr_text = Column(Text, nullable=True)
+    vol = Column(String, nullable=True)  # Volume/Khand number
 
     # Relationships
     session = relationship("Session", back_populates="kramanks")

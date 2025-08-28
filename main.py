@@ -63,10 +63,10 @@ def run_agent_on_all_kramank_folders(base_path):
             try:
                 logger.info(f"📁 Processing folder {i}/{len(kramank_folders)}: {folder}")
                 # Run agent first
-                agent_run(folder)
+                ocr_results=agent_run(folder)
                 
                 # Generate PDFs after successful agent run
-                generate_pdfs_for_folder(folder)
+                generate_pdfs_for_folder(folder,ocr_results)
                 
                 total_processed += 1
                 logger.info(f"✅ Successfully processed and generated PDFs for: {folder}")
@@ -94,19 +94,39 @@ def run_agent_on_all_kramank_folders(base_path):
         logger.error(f"❌ Error in run_agent_on_all_kramank_folders: {str(e)}")
 
 
-def generate_pdfs_for_folder(folder_path):
+def generate_pdfs_for_folder(folder_path,ocr_results):
     """
     Generate PDFs for all debates processed from a specific folder
     """
     logger.info(f"Generating PDFs for debates from folder: {folder_path}")
     try:
-        # Initialize PDF generator with output directory in the folder
-        output_dir = "./generated_pdfs"
+        # Extract kramank_id from ocr_results.debate_ids structure
+        debate_ids_data = ocr_results.get('debate_ids', {})
+        if not debate_ids_data:
+            logger.warning(f"⚠️ No debate_ids found in ocr_results for folder: {folder_path}")
+            return
+            
+        # Get the kramank_id (key from the debate_ids dictionary)
+        kramank_id = list(debate_ids_data.keys())[0] if debate_ids_data else None
+        if not kramank_id:
+            logger.warning(f"⚠️ No kramank_id found in debate_ids for folder: {folder_path}")
+            return
+            
+        # Create kramank_id specific folder under generated_pdfs
+        output_dir = f"./generated_pdfs/{kramank_id}"
+        
+        # Create the directory if it doesn't exist
+        import os
+        os.makedirs(output_dir, exist_ok=True)
+        logger.info(f"📁 Created output directory: {output_dir}")
+        
         # Use the folder path as the base path for images
+        
+        
         pdf_generator = PdfGenerater(output_dir=output_dir, image_base_path=folder_path)
         
         # Process all debates
-        generated_pdfs = pdf_generator.process_all_pending_debates()
+        generated_pdfs = pdf_generator.process_all_pending_debates(ocr_results)
         
         if generated_pdfs:
             logger.info(f"✅ Successfully generated {len(generated_pdfs)} PDFs in {output_dir}")
@@ -127,11 +147,11 @@ def run_single_folder(folder_path):
     logger.info(f"Processing single folder: {folder_path}")
     try:
         # Run the agent first
-        agent_run(folder_path)
+        ocr_results = agent_run(folder_path)
         logger.info(f"✅ Successfully processed: {folder_path}")
         
         # Generate PDFs after successful processing
-        generate_pdfs_for_folder(folder_path)
+        generate_pdfs_for_folder(folder_path, ocr_results)
         
     except Exception as e:
         logger.error(f"❌ Error processing folder {folder_path}: {str(e)}")
