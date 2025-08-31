@@ -358,14 +358,23 @@ async def get_kramank_with_debates(kramank_id: str = Path(..., description="Kram
 
 # ==================== PDF ENDPOINTS ====================
 
-@app.get("/api/pdf/{kramank_id}/{document_name}")
-async def get_pdf_file(kramank_id: str = Path(..., description="Kramank ID"), 
-                      document_name: str = Path(..., description="PDF document name")):
-    """Serve PDF files from the generated_pdfs directory with kramank_id subfolder structure"""
+@app.get("/api/pdf/{debate_id}")
+async def get_pdf_file(debate_id: str = Path(..., description="Debate ID")):
+    """Serve PDF files from the generated_pdfs directory using debate_id to fetch correct document path"""
     try:
-        # Define the base directory for PDFs with kramank_id subfolder
-        pdf_dir = os.path.join(os.getcwd(), "generated_pdfs", kramank_id)
-        pdf_path = os.path.join(pdf_dir, document_name)
+        # Use the database layer to fetch debate data
+        from app.database.db_select import DataFetcher
+        data_fetcher = DataFetcher()
+        
+        # Fetch debate to get kramank_id and document_name
+        debate = data_fetcher.select_debate_by_id(debate_id)
+        
+        if not debate:
+            logger.error(f"❌ Debate not found: {debate_id}")
+            raise HTTPException(status_code=404, detail="Debate not found")
+        
+        # Use the complete path from the database
+        pdf_path = os.path.join(os.getcwd(), debate.document_name)
         
         logger.info(f"🔍 Looking for PDF at: {pdf_path}")
         
@@ -376,8 +385,10 @@ async def get_pdf_file(kramank_id: str = Path(..., description="Kramank ID"),
         return FileResponse(
             pdf_path,
             media_type="application/pdf",
-            filename=document_name
+            filename=debate.document_name
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"❌ Error serving PDF file: {str(e)}")
         raise HTTPException(status_code=500, detail="Error serving PDF file")

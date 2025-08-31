@@ -32,11 +32,12 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy project files
 COPY . .
 
-# Create temp directory with proper permissions
-RUN mkdir -p /app/temp && \
+# Create temp and log directories with proper permissions
+RUN mkdir -p /app/temp /app/log && \
     chown -R appuser:appuser /app && \
     chmod -R 755 /app && \
-    chmod 777 /app/temp
+    chmod 777 /app/temp && \
+    chmod 777 /app/log
 
 # Switch to non-root user
 USER appuser

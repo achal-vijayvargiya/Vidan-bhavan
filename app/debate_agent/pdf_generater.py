@@ -245,7 +245,7 @@ class PdfGenerater:
         try:
             # Fetch debate record with topic and image_name
             query = text("""
-                SELECT image_name, topic 
+                SELECT image_name, title as topic 
                 FROM debates 
                 WHERE debate_id = :debate_id
             """)
