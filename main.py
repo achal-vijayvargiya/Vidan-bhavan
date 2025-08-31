@@ -113,7 +113,9 @@ def generate_pdfs_for_folder(folder_path,ocr_results):
             return
             
         # Create kramank_id specific folder under generated_pdfs
-        output_dir = f"./generated_pdfs/{kramank_id}"
+        # Use absolute path to ensure it's created in the project root
+        project_root = os.path.dirname(os.path.abspath(__file__))
+        output_dir = os.path.join(project_root, "generated_pdfs", kramank_id)
         
         # Create the directory if it doesn't exist
         import os
