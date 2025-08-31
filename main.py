@@ -118,7 +118,6 @@ def generate_pdfs_for_folder(folder_path,ocr_results):
         output_dir = os.path.join(project_root, "generated_pdfs", kramank_id)
         
         # Create the directory if it doesn't exist
-        import os
         os.makedirs(output_dir, exist_ok=True)
         logger.info(f"📁 Created output directory: {output_dir}")
         
