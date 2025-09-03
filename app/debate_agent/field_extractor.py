@@ -107,8 +107,8 @@ def extract_fields(debate: Dict, debate_type: Dict):
         debate_data["date"] = clean_text(debate_data["date"])
     if debate_data.get("members"):
         debate_data["members"] = clean_list(debate_data["members"])
-    if debate_data.get("answers_by"):
-        debate_data["answers_by"] = clean_list(debate_data["answers_by"])
+    if debate_data.get("answer_by"):
+        debate_data["answer_by"] = clean_list(debate_data["answer_by"])
     if debate_data.get("question_by"):
         debate_data["question_by"] = clean_list(debate_data["question_by"])
     if debate_data.get("question_number"):
@@ -153,8 +153,8 @@ def extract_fields(debate: Dict, debate_type: Dict):
             question_initiators.add(member)
     
     # Add answer providers
-    if debate_data.get("answers_by"):
-        for member in debate_data["answers_by"]:
+    if debate_data.get("answer_by"):
+        for member in debate_data["answer_by"]:
             all_members.add(member)
             answer_providers.add(member)
     
@@ -237,7 +237,7 @@ def extract_fields_from_others(text):
     # Pattern for answer providers (ministers, officials who respond)
     answer_providers_pattern = r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)(?:\s+यांनी|\s+ने|\s+कडून)?\s+(?:उत्तर\s+दिले|जबाब\s+दिला|स्पष्टीकरण\s+दिले|माहिती\s+दिली)'
     answer_providers = re.findall(answer_providers_pattern, text)
-    data["answers_by"] = list(set(answer_providers)) if answer_providers else []
+    data["answer_by"] = list(set(answer_providers)) if answer_providers else []
     
     # General members pattern (all names mentioned)
     members_pattern = r'(?:श्रीमती|श्री|सर्वश्री)\.? [^\n:,]+'
@@ -267,12 +267,12 @@ def extract_fields_from_others(text):
     for pattern in additional_answer_patterns:
         matches = re.findall(pattern, text)
         for match in matches:
-            if match not in data["answers_by"]:
-                data["answers_by"].append(match)
+            if match not in data["answer_by"]:
+                data["answer_by"].append(match)
     
     # Remove duplicates
     data["question_by"] = list(set(data["question_by"]))
-    data["answers_by"] = list(set(data["answers_by"]))
+    data["answer_by"] = list(set(data["answer_by"]))
 
     return data
 def extract_fields_llm(text):
@@ -307,7 +307,7 @@ def extract_fields_from_devices(text):
     # Pattern for answer providers (ministers, officials who respond)
     answer_providers_pattern = r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)(?:\s+यांनी|\s+ने|\s+कडून)?\s+(?:उत्तर\s+दिले|जबाब\s+दिला|स्पष्टीकरण\s+दिले|माहिती\s+दिली)'
     answer_providers = re.findall(answer_providers_pattern, text)
-    data["answers_by"] = list(set(answer_providers)) if answer_providers else []
+    data["answer_by"] = list(set(answer_providers)) if answer_providers else []
     
     # General members pattern (all names mentioned)
     members_pattern = r'(?:श्रीमती|श्री|सर्वश्री)\.? [^\n:,]+'
@@ -347,11 +347,11 @@ def extract_fields_from_devices(text):
     for pattern in additional_answer_patterns:
         matches = re.findall(pattern, text)
         for match in matches:
-            if match not in data["answers_by"]:
-                data["answers_by"].append(match)
+            if match not in data["answer_by"]:
+                data["answer_by"].append(match)
     
     # Remove duplicates
     data["question_by"] = list(set(data["question_by"]))
-    data["answers_by"] = list(set(data["answers_by"]))
+    data["answer_by"] = list(set(data["answer_by"]))
 
     return data

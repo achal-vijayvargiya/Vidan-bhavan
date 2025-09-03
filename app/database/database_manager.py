@@ -89,7 +89,7 @@ class DataManager:
                 question_number_json = json.dumps(debate.get('question_number', []), ensure_ascii=False)
                 members_json = json.dumps(debate.get('members', []), ensure_ascii=False)
                 topics_json = json.dumps(debate.get('topics', []), ensure_ascii=False)
-                answers_json = json.dumps(debate.get('answers_by', []), ensure_ascii=False)
+                answers_json = json.dumps(debate.get('answer_by', []), ensure_ascii=False)
                 lob_json = json.dumps(debate.get('debate_type', {}), ensure_ascii=False)
                 image_name_json = json.dumps(debate.get('image_name', {}), ensure_ascii=False)
                 topic_json = json.dumps(debate.get('topic', {}), ensure_ascii=False)
@@ -99,7 +99,7 @@ class DataManager:
                 self.db.cursor.execute('''
                 INSERT INTO debates (
                     kramank_id, image_name, topic, text, date,
-                    question_number, members, topics, answers_by, lob
+                    question_number, members, topics, answer_by, lob
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (

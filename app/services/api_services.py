@@ -632,7 +632,6 @@ class ApiService:
             "last_update": debate.date,  # Use date as last update
             "question_number": debate.question_no,  # Alias for question_no
             "topics": debate.topic,  # Alias for topic
-            "answers_by": debate.answer_by  # Alias for answer_by
         }
     
     def _serialize_resolution(self, resolution: Resolution) -> Dict[str, Any]:

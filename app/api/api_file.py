@@ -731,7 +731,7 @@ async def get_debate_by_id(debate_id: str = Path(..., description="Debate ID")):
                 debate[key] = value
         
         # Parse JSON fields
-        for field in ['question_number', 'members', 'topics', 'answers_by']:
+        for field in ['question_number', 'members', 'topics', 'answer_by']:
             if field in debate and debate[field]:
                 try:
                     debate[field] = json.loads(debate[field])

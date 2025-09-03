@@ -121,7 +121,7 @@ class DatabaseManager:
             question_number TEXT,  -- JSON array
             members TEXT,  -- JSON array
             topics TEXT,  -- JSON array
-            answers_by TEXT,  -- JSON array
+            answer_by TEXT,  -- JSON array
             lob TEXT,  -- JSON object for lob data
             status TEXT,
             user TEXT,
@@ -361,7 +361,7 @@ class DatabaseManager:
             question_number_json = json.dumps(debate.get('question_number', []), ensure_ascii=False)
             members_json = json.dumps(debate.get('members', []), ensure_ascii=False)
             topics_json = json.dumps(debate.get('topics', []), ensure_ascii=False)
-            answers_json = json.dumps(debate.get('answers_by', []), ensure_ascii=False)
+            answers_json = json.dumps(debate.get('answer_by', []), ensure_ascii=False)
             lob_json = json.dumps(debate.get('lob', {}), ensure_ascii=False)
 
             # Insert debate
@@ -369,7 +369,7 @@ class DatabaseManager:
             self.cursor.execute('''
             INSERT INTO debates (
                 kramank_id, image_name, topic, text, date,
-                question_number, members, topics, answers_by, lob, status, user, last_update
+                question_number, members, topics, answer_by, lob, status, user, last_update
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (

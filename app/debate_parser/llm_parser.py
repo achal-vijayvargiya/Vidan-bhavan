@@ -23,9 +23,9 @@ Extract the following structured data from the given debate text:
 - date: (e.g., "१३ मार्च २०००")
 - question_number(s): (e.g., [45, 46])
 - question_by: list of names who INITIATED or ASKED the question/topic (the person who brought up the subject)
-- members: list of ALL names mentioned in the debate (including question_by and answers_by)
+- members: list of ALL names mentioned in the debate (including question_by and answer_by)
 - topics: key issues or bill subjects discussed
-- answers_by: list of names who RESPONDED or ANSWERED the question/topic (ministers, officials, or other speakers who provided answers)
+- answer_by: list of names who RESPONDED or ANSWERED the question/topic (ministers, officials, or other speakers who provided answers)
 
 📌 CRITICAL INSTRUCTIONS for member identification:
 
@@ -35,7 +35,7 @@ Extract the following structured data from the given debate text:
    - Present topics (विषय मांडला)
    - Use phrases like "श्री/श्रीमती [नाव] यांनी प्रश्न विचारला"
 
-2. **answers_by**: Look for names who:
+2. **answer_by**: Look for names who:
    - Provide official responses (अधिकृत उत्तर दिले)
    - Are ministers or officials (मंत्री, अधिकारी)
    - Respond to questions (प्रश्नांचे उत्तर दिले)
@@ -51,7 +51,7 @@ Extract the following structured data from the given debate text:
   "question_by": [],
   "members": [],
   "topics": [],
-  "answers_by": []
+  "answer_by": []
 }}
 
 IMPORTANT: When generating Marathi text responses:
@@ -110,7 +110,7 @@ def get_debate_data(text) -> dict:
                 return None
         
         # Validate the extracted data structure
-        required_fields = ["date", "question_number", "members", "topics", "answers_by"]
+        required_fields = ["date", "question_number", "members", "topics", "answer_by"]
         if not all(field in extracted_data for field in required_fields):
             logger.error(f"Error: Missing required fields in response. Got: {list(extracted_data.keys())}")
             return None
