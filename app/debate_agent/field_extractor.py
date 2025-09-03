@@ -26,9 +26,10 @@ def clean_text(text: str) -> str:
     # Fix "t   topic" -> "topic" (field name corruption)
     cleaned = re.sub(r't\s+topic', 'topic', cleaned)
     
-    # Remove excessive spaces in the middle of words
-    # This handles cases like "गा         ायनाने" -> "गायनाने"
-    cleaned = re.sub(r'(\w)\s+(\w)', r'\1\2', cleaned)
+    # Remove excessive spaces in the middle of words ONLY for specific OCR artifacts
+    # This is more targeted to avoid removing legitimate spaces between words
+    # Only fix cases where there are 3+ spaces between characters that are likely part of the same word
+    cleaned = re.sub(r'(\w)\s{3,}(\w)', r'\1\2', cleaned)
     
     # Normalize common OCR artifacts
     cleaned = re.sub(r' +', ' ', cleaned)  # Multiple spaces to single space
@@ -108,6 +109,8 @@ def extract_fields(debate: Dict, debate_type: Dict):
         debate_data["members"] = clean_list(debate_data["members"])
     if debate_data.get("answers_by"):
         debate_data["answers_by"] = clean_list(debate_data["answers_by"])
+    if debate_data.get("question_by"):
+        debate_data["question_by"] = clean_list(debate_data["question_by"])
     if debate_data.get("question_number"):
         debate_data["question_number"] = [clean_text(str(q)) for q in debate_data["question_number"] if q]
     if debate_data.get("title"):
@@ -138,6 +141,39 @@ def extract_fields(debate: Dict, debate_type: Dict):
         logger.warning("⚠️ Title is empty after extraction, using topic as title")
         debate_data["title"] = debate_data["topic"]
     
+    # Create comprehensive member categorization
+    all_members = set()
+    question_initiators = set()
+    answer_providers = set()
+    
+    # Add question initiators
+    if debate_data.get("question_by"):
+        for member in debate_data["question_by"]:
+            all_members.add(member)
+            question_initiators.add(member)
+    
+    # Add answer providers
+    if debate_data.get("answers_by"):
+        for member in debate_data["answers_by"]:
+            all_members.add(member)
+            answer_providers.add(member)
+    
+    # Add other members mentioned
+    if debate_data.get("members"):
+        for member in debate_data["members"]:
+            all_members.add(member)
+    
+    # Convert sets to lists for database storage
+    all_members_list = list(all_members)
+    question_initiators_list = list(question_initiators)
+    answer_providers_list = list(answer_providers)
+    
+    # Log member categorization for debugging
+    logger.info(f"👥 Member categorization:")
+    logger.info(f"   Question initiators: {question_initiators_list}")
+    logger.info(f"   Answer providers: {answer_providers_list}")
+    logger.info(f"   Total unique members: {len(all_members_list)}")
+    
     # Debug logging
     logger.info(f"🔍 Final topic: '{debate_data.get('topic', 'NOT_SET')}'")
     logger.info(f"🔍 Final title: '{debate_data.get('title', 'NOT_SET')}'")
@@ -149,13 +185,13 @@ def extract_fields(debate: Dict, debate_type: Dict):
             document_name=cleaned_debate.get('document_name'),
             kramank_id=cleaned_debate.get('kramank_id'),
             date=debate_data.get("date"),
-            members=debate_data.get("members", []),
+            members=all_members_list,  # All members mentioned in the debate
             lob_type=clean_text(debate_type.get("lob_type")) if debate_type else None,
             lob=clean_text(debate_type.get("lob")) if debate_type else None,
             sub_lob=clean_text(debate_type.get("sub_lob")) if debate_type else None,
             question_no=debate_data.get("question_number", [None])[0] if debate_data.get("question_number") else None,
-            question_by=None,  # Could be extracted if available
-            answer_by=debate_data.get("answers_by", [None])[0] if debate_data.get("answers_by") else None,
+            question_by=", ".join(question_initiators_list) if question_initiators_list else None,  # Who initiated the topic
+            answer_by=", ".join(answer_providers_list) if answer_providers_list else None,  # Who answered
             ministry=None,  # Could be extracted if available
             title=debate_data.get("title",""),
             topic=debate_data.get("topic",""),
@@ -169,6 +205,8 @@ def extract_fields(debate: Dict, debate_type: Dict):
         
         logger.info(f"✅ Created debate object with topic: {debate_obj.topic[:50]}...")
         logger.info(f"📊 Debate stats: text_length={len(debate_obj.text)}, members={len(debate_obj.members)}")
+        logger.info(f"🔍 Question by: {debate_obj.question_by}")
+        logger.info(f"🔍 Answer by: {debate_obj.answer_by}")
         
         return debate_obj
         
@@ -190,9 +228,51 @@ def extract_fields_from_others(text):
     date_match = re.search(r'\d{1,2} [ज|फ|म|ए|म|ज|ज|ऑ|स|ऑ|नो|ड][^\s]* \d{4}', text)
     data["date"] = date_match.group() if date_match else None
 
+    # 2. Enhanced member role identification
+    # Pattern for question initiators (people who ask questions)
+    question_initiators_pattern = r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)(?:\s+यांनी|\s+ने|\s+कडून)?\s+(?:प्रश्न\s+विचारला|चर्चा\s+सुरू\s+केली|विषय\s+मांडला|प्रश्न\s+केला)'
+    question_initiators = re.findall(question_initiators_pattern, text)
+    data["question_by"] = list(set(question_initiators)) if question_initiators else []
+    
+    # Pattern for answer providers (ministers, officials who respond)
+    answer_providers_pattern = r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)(?:\s+यांनी|\s+ने|\s+कडून)?\s+(?:उत्तर\s+दिले|जबाब\s+दिला|स्पष्टीकरण\s+दिले|माहिती\s+दिली)'
+    answer_providers = re.findall(answer_providers_pattern, text)
+    data["answers_by"] = list(set(answer_providers)) if answer_providers else []
+    
+    # General members pattern (all names mentioned)
     members_pattern = r'(?:श्रीमती|श्री|सर्वश्री)\.? [^\n:,]+'
     members = re.findall(members_pattern, text)
     data["members"] = list(set(members))  # unique
+
+    # 3. Additional patterns for question initiators
+    additional_question_patterns = [
+        r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)\s+यांनी\s+प्रश्न\s+विचारला',
+        r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)\s+कडून\s+प्रश्न\s+आला',
+        r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)\s+ने\s+चर्चा\s+सुरू\s+केली'
+    ]
+    
+    for pattern in additional_question_patterns:
+        matches = re.findall(pattern, text)
+        for match in matches:
+            if match not in data["question_by"]:
+                data["question_by"].append(match)
+    
+    # 4. Additional patterns for answer providers
+    additional_answer_patterns = [
+        r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)\s+यांनी\s+उत्तर\s+दिले',
+        r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)\s+कडून\s+जबाब\s+आला',
+        r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)\s+ने\s+स्पष्टीकरण\s+दिले'
+    ]
+    
+    for pattern in additional_answer_patterns:
+        matches = re.findall(pattern, text)
+        for match in matches:
+            if match not in data["answers_by"]:
+                data["answers_by"].append(match)
+    
+    # Remove duplicates
+    data["question_by"] = list(set(data["question_by"]))
+    data["answers_by"] = list(set(data["answers_by"]))
 
     return data
 def extract_fields_llm(text):
@@ -218,7 +298,18 @@ def extract_fields_from_devices(text):
     question_numbers = re.findall(r'(?:प्रश्न क्रमांक|क्रमांक)\s*(\d+)', text)
     data["question_number"] = question_numbers
 
-    # 3. Members
+    # 3. Members - Enhanced pattern matching for different roles
+    # Pattern for question initiators (people who ask questions)
+    question_initiators_pattern = r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)(?:\s+यांनी|\s+ने|\s+कडून)?\s+(?:प्रश्न\s+विचारला|चर्चा\s+सुरू\s+केली|विषय\s+मांडला|प्रश्न\s+केला)'
+    question_initiators = re.findall(question_initiators_pattern, text)
+    data["question_by"] = list(set(question_initiators)) if question_initiators else []
+    
+    # Pattern for answer providers (ministers, officials who respond)
+    answer_providers_pattern = r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)(?:\s+यांनी|\s+ने|\s+कडून)?\s+(?:उत्तर\s+दिले|जबाब\s+दिला|स्पष्टीकरण\s+दिले|माहिती\s+दिली)'
+    answer_providers = re.findall(answer_providers_pattern, text)
+    data["answers_by"] = list(set(answer_providers)) if answer_providers else []
+    
+    # General members pattern (all names mentioned)
     members_pattern = r'(?:श्रीमती|श्री|सर्वश्री)\.? [^\n:,]+'
     members = re.findall(members_pattern, text)
     data["members"] = list(set(members))  # unique
@@ -231,8 +322,36 @@ def extract_fields_from_devices(text):
             topics.append(line.strip())
     data["topics"] = list(set(topics))
 
-    # 5. Answers by (look for names followed by colon)
-    answers_by = re.findall(r'(?:श्री\.|श्रीमती\.?)\s[^\n:]+(?= :|\:)', text)
-    data["answers_by"] = list(set(answers_by))
+    # 5. Additional patterns for question initiators
+    # Look for names followed by question-related phrases
+    additional_question_patterns = [
+        r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)\s+यांनी\s+प्रश्न\s+विचारला',
+        r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)\s+कडून\s+प्रश्न\s+आला',
+        r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)\s+ने\s+चर्चा\s+सुरू\s+केली'
+    ]
+    
+    for pattern in additional_question_patterns:
+        matches = re.findall(pattern, text)
+        for match in matches:
+            if match not in data["question_by"]:
+                data["question_by"].append(match)
+    
+    # 6. Additional patterns for answer providers
+    # Look for names followed by answer-related phrases
+    additional_answer_patterns = [
+        r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)\s+यांनी\s+उत्तर\s+दिले',
+        r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)\s+कडून\s+जबाब\s+आला',
+        r'(?:श्रीमती|श्री|सर्वश्री)\.? ([^\n:,]+?)\s+ने\s+स्पष्टीकरण\s+दिले'
+    ]
+    
+    for pattern in additional_answer_patterns:
+        matches = re.findall(pattern, text)
+        for match in matches:
+            if match not in data["answers_by"]:
+                data["answers_by"].append(match)
+    
+    # Remove duplicates
+    data["question_by"] = list(set(data["question_by"]))
+    data["answers_by"] = list(set(data["answers_by"]))
 
     return data

@@ -13,17 +13,35 @@ logger = Logger()
 load_dotenv()
 
 # Create the prompt template
-DEBATE_PARSER_TEMPLATE = """You are a document parser working on Marathi Vidhan Sabha debates.
+DEBATE_PARSER_TEMPLATE = """You are an expert document parser working on Marathi Vidhan Sabha debates.
+
+Your task is to carefully analyze the debate text and extract structured data with specific focus on WHO is doing WHAT.
 
 Extract the following structured data from the given debate text:
 
 - title: (e.g., "विधानसभा वार्षिक बजट विषयक विचारणा")
 - date: (e.g., "१३ मार्च २०००")
 - question_number(s): (e.g., [45, 46])
-- question_by: list of names who asked the question
-- members: list of names involved (asking or speaking)
-- topics: key issues or bill subjects
-- answers_by: list of names who responded (with or without colon)
+- question_by: list of names who INITIATED or ASKED the question/topic (the person who brought up the subject)
+- members: list of ALL names mentioned in the debate (including question_by and answers_by)
+- topics: key issues or bill subjects discussed
+- answers_by: list of names who RESPONDED or ANSWERED the question/topic (ministers, officials, or other speakers who provided answers)
+
+📌 CRITICAL INSTRUCTIONS for member identification:
+
+1. **question_by**: Look for names who:
+   - Ask questions (प्रश्न विचारले)
+   - Initiate discussions (चर्चा सुरू केली)
+   - Present topics (विषय मांडला)
+   - Use phrases like "श्री/श्रीमती [नाव] यांनी प्रश्न विचारला"
+
+2. **answers_by**: Look for names who:
+   - Provide official responses (अधिकृत उत्तर दिले)
+   - Are ministers or officials (मंत्री, अधिकारी)
+   - Respond to questions (प्रश्नांचे उत्तर दिले)
+   - Use phrases like "श्री/श्रीमती [नाव] यांनी उत्तर दिले"
+
+3. **members**: Include ALL names mentioned, but categorize them by role
 
 📌 Return output as valid JSON:
 {{
@@ -35,19 +53,20 @@ Extract the following structured data from the given debate text:
   "topics": [],
   "answers_by": []
 }}
+
 IMPORTANT: When generating Marathi text responses:
 1. Use EXACT text from the input text - do not modify or translate
 2. Preserve all Marathi characters, numbers and formatting
 3. Do not add any English text or translations
 4. Return only the extracted Marathi text exactly as it appears in source
 5. If any field is not present, then return empty list for that field
+6. Be very careful to distinguish between who ASKED vs who ANSWERED
 DO NOT return extra text, markdown, or comments.
 
 Text:
 {text}
 
 DO NOT return extra text, markdown, or comments.
-
 """
 
 prompt = ChatPromptTemplate.from_template(DEBATE_PARSER_TEMPLATE)
